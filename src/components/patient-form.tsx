@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
-import { upsertPatient, uid } from "@/lib/mock-store";
+import { upsertPatient, uid } from "@/lib/api-store";
 import { calcAge, bmi } from "@/lib/format";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";

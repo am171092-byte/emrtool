@@ -5,7 +5,7 @@ import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
 import type { JointState, Patient, DAS28Entry } from "@/lib/types";
 import { fullJointLabel } from "@/lib/joints";
-import { upsertPatient, uid } from "@/lib/mock-store";
+import { upsertPatient, uid } from "@/lib/api-store";
 import { formatDate } from "@/lib/format";
 import { activityLabel } from "@/lib/das28";
 import { RotateCcw, Save, Trash2 } from "lucide-react";

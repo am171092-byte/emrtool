@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Loader2, FileText, Trash2 } from "lucide-react";
 import type { Patient, Investigation, Attachment } from "@/lib/types";
-import { uid, addAttachment, upsertPatient } from "@/lib/mock-store";
+import { uid, addAttachment, upsertPatient } from "@/lib/api-store";
 import { extractReport, type ExtractedReport } from "@/lib/report-extract";
 import { toast } from "sonner";
 

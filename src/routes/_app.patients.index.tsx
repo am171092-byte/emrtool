@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { useAllPatients } from "@/lib/use-store";
 import { calcAge, formatDate, patientMatches } from "@/lib/format";
-import { deletePatient } from "@/lib/mock-store";
+import { deletePatient } from "@/lib/api-store";
 import { Plus, Trash2, MoreVertical } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,

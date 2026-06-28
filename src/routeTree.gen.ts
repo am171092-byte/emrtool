@@ -13,6 +13,7 @@ import { Route as ProfileSetupRouteImport } from './routes/profile-setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthSuccessRouteImport } from './routes/auth.success'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppDas28RouteImport } from './routes/_app.das28'
@@ -44,6 +45,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSuccessRoute = AuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/das28': typeof AppDas28Route
   '/dashboard': typeof AppDashboardRoute
   '/settings': typeof AppSettingsRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/patients/new': typeof AppPatientsNewRoute
   '/patients/': typeof AppPatientsIndexRoute
   '/patients/$patientId/das28': typeof AppPatientsPatientIdDas28Route
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/das28': typeof AppDas28Route
   '/dashboard': typeof AppDashboardRoute
   '/settings': typeof AppSettingsRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/patients/new': typeof AppPatientsNewRoute
   '/patients': typeof AppPatientsIndexRoute
   '/patients/$patientId/das28': typeof AppPatientsPatientIdDas28Route
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_app/das28': typeof AppDas28Route
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/_app/patients/new': typeof AppPatientsNewRoute
   '/_app/patients/': typeof AppPatientsIndexRoute
   '/_app/patients/$patientId/das28': typeof AppPatientsPatientIdDas28Route
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/das28'
     | '/dashboard'
     | '/settings'
+    | '/auth/success'
     | '/patients/new'
     | '/patients/'
     | '/patients/$patientId/das28'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/das28'
     | '/dashboard'
     | '/settings'
+    | '/auth/success'
     | '/patients/new'
     | '/patients'
     | '/patients/$patientId/das28'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/_app/das28'
     | '/_app/dashboard'
     | '/_app/settings'
+    | '/auth/success'
     | '/_app/patients/new'
     | '/_app/patients/'
     | '/_app/patients/$patientId/das28'
@@ -237,6 +249,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   ProfileSetupRoute: typeof ProfileSetupRoute
+  AuthSuccessRoute: typeof AuthSuccessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/success': {
+      id: '/auth/success'
+      path: '/auth/success'
+      fullPath: '/auth/success'
+      preLoaderRoute: typeof AuthSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/settings': {
@@ -403,6 +423,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   ProfileSetupRoute: ProfileSetupRoute,
+  AuthSuccessRoute: AuthSuccessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
