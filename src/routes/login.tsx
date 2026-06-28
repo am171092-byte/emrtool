@@ -39,9 +39,6 @@ function Login() {
         <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
           Your patient records are stored exclusively in your private Google Drive. Nobody else can access them.
         </p>
-        <p className="mt-3 text-[11px] text-muted-foreground/80">
-          Demo build · in-memory mock backend
-        </p>
       </div>
     </div>
   );
