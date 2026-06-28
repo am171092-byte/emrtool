@@ -135,4 +135,10 @@ export interface Doctor {
   name: string;
   email: string;
   avatar?: string;
+  clinicName?: string;
+  specialty?: string;
+  phone?: string;
+  registrationNo?: string;
+  address?: string;
+  profileComplete?: boolean;
 }
