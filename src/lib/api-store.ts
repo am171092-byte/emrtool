@@ -178,13 +178,14 @@ export async function loadVisit(visitId: string): Promise<Visit | undefined> {
 }
 
 export async function upsertVisit(v: Visit): Promise<void> {
+  const norm = normalizeVisit(v);
   const all = [...cache.visits];
-  const i = all.findIndex((x) => x.id === v.id);
-  if (i >= 0) all[i] = v;
-  else all.unshift(v);
+  const i = all.findIndex((x) => x.id === norm.id);
+  if (i >= 0) all[i] = norm;
+  else all.unshift(norm);
   cache.visits = all;
   notify();
-  await api(`/api/visits/${v.id}`, { method: "PUT", body: JSON.stringify(v) });
+  await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
 }
 
 export async function deleteVisit(id: string): Promise<void> {
