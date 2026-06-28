@@ -362,9 +362,3 @@ export function deleteAttachment(patientId: string, aid: string) {
     setPatients(all);
   }
 }
-  const i = all.findIndex((p) => p.id === patientId);
-  if (i >= 0) {
-    all[i] = { ...all[i], attachments: all[i].attachments.filter((a) => a.id !== aid) };
-    setPatients(all);
-  }
-}
