@@ -6,7 +6,7 @@ import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import type { JointState } from "@/lib/types";
 import { fullJointLabel } from "@/lib/joints";
 import { usePatient } from "@/lib/use-store";
-import { RotateCcw, Calculator } from "lucide-react";
+import { RotateCcw, Calculator, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/patients/$patientId/joint-map")({
   head: () => ({ meta: [{ title: "Joint map — RheumCare" }] }),
@@ -24,7 +24,7 @@ function JointMapPage() {
   const tjc = list.filter((j) => j.tender).length;
   const sjc = list.filter((j) => j.swollen).length;
 
-  if (!p) return <div className="text-sm text-muted-foreground">Patient not found.</div>;
+  if (!p) return <div className="flex items-center justify-center h-full py-16"><Loader2 className="h-6 w-6 animate-spin" /><span className="ml-2 text-sm text-muted-foreground">Loading patient...</span></div>;
 
   return (
     <div className="space-y-4">

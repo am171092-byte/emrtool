@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { PatientForm } from "@/components/patient-form";
 import { usePatient } from "@/lib/use-store";
 
@@ -11,7 +12,7 @@ function EditPatient() {
   const { patientId } = Route.useParams();
   const p = usePatient(patientId);
   const nav = useNavigate();
-  if (!p) return <div className="text-sm text-muted-foreground">Patient not found.</div>;
+  if (!p) return <div className="flex items-center justify-center h-full py-16"><Loader2 className="h-6 w-6 animate-spin" /><span className="ml-2 text-sm text-muted-foreground">Loading patient...</span></div>;
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Edit patient</h1>
