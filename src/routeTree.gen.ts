@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppDas28RouteImport } from './routes/_app.das28'
+import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
 import { Route as AppAiAssistantRouteImport } from './routes/_app.ai-assistant'
 import { Route as AppPatientsIndexRouteImport } from './routes/_app.patients.index'
 import { Route as AppPatientsNewRouteImport } from './routes/_app.patients.new'
@@ -52,6 +53,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppDas28Route = AppDas28RouteImport.update({
   id: '/das28',
   path: '/das28',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAiAssistantRoute = AppAiAssistantRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/ai-assistant': typeof AppAiAssistantRoute
+  '/calendar': typeof AppCalendarRoute
   '/das28': typeof AppDas28Route
   '/dashboard': typeof AppDashboardRoute
   '/settings': typeof AppSettingsRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/ai-assistant': typeof AppAiAssistantRoute
+  '/calendar': typeof AppCalendarRoute
   '/das28': typeof AppDas28Route
   '/dashboard': typeof AppDashboardRoute
   '/settings': typeof AppSettingsRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/ai-assistant': typeof AppAiAssistantRoute
+  '/_app/calendar': typeof AppCalendarRoute
   '/_app/das28': typeof AppDas28Route
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/ai-assistant'
+    | '/calendar'
     | '/das28'
     | '/dashboard'
     | '/settings'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/ai-assistant'
+    | '/calendar'
     | '/das28'
     | '/dashboard'
     | '/settings'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/ai-assistant'
+    | '/_app/calendar'
     | '/_app/das28'
     | '/_app/dashboard'
     | '/_app/settings'
@@ -256,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/das28'
       fullPath: '/das28'
       preLoaderRoute: typeof AppDas28RouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calendar': {
+      id: '/_app/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/ai-assistant': {
@@ -326,6 +345,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAiAssistantRoute: typeof AppAiAssistantRoute
+  AppCalendarRoute: typeof AppCalendarRoute
   AppDas28Route: typeof AppDas28Route
   AppDashboardRoute: typeof AppDashboardRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -341,6 +361,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAiAssistantRoute: AppAiAssistantRoute,
+  AppCalendarRoute: AppCalendarRoute,
   AppDas28Route: AppDas28Route,
   AppDashboardRoute: AppDashboardRoute,
   AppSettingsRoute: AppSettingsRoute,
