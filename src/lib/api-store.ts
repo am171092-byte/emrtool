@@ -23,6 +23,29 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+function normalizePatient(p: Patient): Patient {
+  return {
+    ...p,
+    allergies: p.allergies ?? [],
+    medications: p.medications ?? [],
+    comorbidities: p.comorbidities ?? [],
+    problemList: p.problemList ?? [],
+    vitals: p.vitals ?? [],
+    investigations: p.investigations ?? [],
+    attachments: p.attachments ?? [],
+    das28History: p.das28History ?? [],
+  };
+}
+
+function normalizeVisit(v: Visit): Visit {
+  return {
+    ...v,
+    prescriptions: v.prescriptions ?? [],
+    investigations: v.investigations ?? [],
+    soap: v.soap ?? { subjective: "", objective: "", assessment: "", plan: "" },
+  };
+}
+
 const cache: {
   patients: Patient[];
   visits: Visit[];
