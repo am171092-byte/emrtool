@@ -64,17 +64,17 @@ function CalendarPage() {
             onSelect={(d) => d && setSelected(d)}
             className="w-full [--cell-size:2.6rem]"
             components={{
-              DayButton: (props) => {
-                const k = props.day.date.toDateString();
+              DayButton: ({ day, modifiers, ...rest }) => {
+                const k = day.date.toDateString();
                 const seen = countsByDay.get(k) ?? 0;
                 const due = upcomingByDay.get(k) ?? 0;
                 return (
                   <button
-                    {...props}
-                    className="relative aspect-square w-full rounded-md text-sm hover:bg-accent/40 data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground"
-                    data-selected-single={props.modifiers.selected || undefined}
+                    {...rest}
+                    className="relative aspect-square w-full rounded-md text-sm hover:bg-accent/40 data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground"
+                    data-selected={modifiers.selected || undefined}
                   >
-                    <span>{props.day.date.getDate()}</span>
+                    <span>{day.date.getDate()}</span>
                     {(seen > 0 || due > 0) && (
                       <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                         {seen > 0 && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
