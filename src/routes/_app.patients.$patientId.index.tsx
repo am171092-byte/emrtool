@@ -114,11 +114,12 @@ function PatientRecord() {
         {/* Right tabs */}
         <section className="flex-1 min-w-0">
           <Tabs defaultValue="timeline">
-            <TabsList className="grid grid-cols-4 w-full max-w-xl">
+            <TabsList className="grid grid-cols-5 w-full max-w-2xl">
               <TabsTrigger value="timeline">Visits</TabsTrigger>
+              <TabsTrigger value="das28">DAS28</TabsTrigger>
               <TabsTrigger value="vitals">Vitals</TabsTrigger>
-              <TabsTrigger value="investigations">Investigations</TabsTrigger>
-              <TabsTrigger value="attachments">Attachments</TabsTrigger>
+              <TabsTrigger value="investigations">Labs</TabsTrigger>
+              <TabsTrigger value="attachments">Files</TabsTrigger>
             </TabsList>
 
             <TabsContent value="timeline" className="space-y-3 mt-4">
