@@ -171,6 +171,12 @@ function PatientRecord() {
               ))}
             </TabsContent>
 
+            <TabsContent value="das28" className="space-y-3 mt-4">
+              <DAS28Panel patient={p} />
+            </TabsContent>
+
+
+
             <TabsContent value="vitals" className="space-y-3 mt-4">
               <VitalsTab patient={p} />
             </TabsContent>
