@@ -49,15 +49,24 @@ function SettingsPage() {
       <h1 className="text-2xl font-semibold">Settings</h1>
 
       <Card className="p-5">
-        <h2 className="font-semibold mb-3">Profile</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Profile</h2>
+          <Button variant="outline" size="sm" onClick={() => nav({ to: "/profile-setup" })}>Edit profile</Button>
+        </div>
         <div className="flex items-center gap-3">
-          <InitialsAvatar name={doctor.name} size={56} />
-          <div>
-            <div className="font-medium">{doctor.name}</div>
-            <div className="text-xs text-muted-foreground">{doctor.email}</div>
+          <InitialsAvatar name={doctor.name || doctor.email} size={56} />
+          <div className="min-w-0">
+            <div className="font-medium truncate">{doctor.name || "Unnamed clinician"}</div>
+            <div className="text-xs text-muted-foreground truncate">{doctor.email}</div>
+            {(doctor.specialty || doctor.clinicName) && (
+              <div className="text-xs text-muted-foreground truncate">
+                {[doctor.specialty, doctor.clinicName].filter(Boolean).join(" · ")}
+              </div>
+            )}
           </div>
         </div>
       </Card>
+
 
       <Card className="p-5">
         <h2 className="font-semibold mb-1">Google Drive</h2>

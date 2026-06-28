@@ -33,10 +33,12 @@ export function AppShell() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated; to profile setup if first-time user
   useEffect(() => {
     if (!doctor) navigate({ to: "/login" });
+    else if (!doctor.profileComplete) navigate({ to: "/profile-setup" });
   }, [doctor, navigate]);
+
 
   // Keyboard shortcuts
   useEffect(() => {

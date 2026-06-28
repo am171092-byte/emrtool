@@ -6,33 +6,50 @@ interface AuthState {
   token: string | null;
   signIn: () => void;
   signOut: () => void;
+  updateProfile: (patch: Partial<Doctor>) => void;
 }
 
 const AuthCtx = createContext<AuthState | null>(null);
 
-const DEMO_DOCTOR: Doctor = {
-  name: "Dr. Anjali Rao",
-  email: "anjali.rao@rheumcare.app",
-};
-
 const SESSION_KEY = "rheumcare_auth_v1";
+const PROFILE_KEY = "rheumcare_profile_v1";
+
+// Mocks the email returned by Google after OAuth. Profile fields start blank
+// so the user fills them in via /profile-setup the first time they sign in.
+const GOOGLE_EMAIL = "doctor@rheumcare.app";
+
+function loadProfile(): Doctor | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    return raw ? (JSON.parse(raw) as Doctor) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProfile(d: Doctor) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(d));
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Persist a flag (not the token!) so the user stays signed in across reloads in the demo.
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const sess = sessionStorage.getItem(SESSION_KEY);
-    if (sess === "1") {
-      setDoctor(DEMO_DOCTOR);
+    if (sessionStorage.getItem(SESSION_KEY) === "1") {
+      const stored = loadProfile();
+      setDoctor(stored ?? { name: "", email: GOOGLE_EMAIL, profileComplete: false });
       setToken("mock_jwt_token_in_memory_only");
     }
   }, []);
 
   const signIn = () => {
-    setDoctor(DEMO_DOCTOR);
+    const stored = loadProfile();
+    const d: Doctor = stored ?? { name: "", email: GOOGLE_EMAIL, profileComplete: false };
+    setDoctor(d);
     setToken("mock_jwt_token_in_memory_only");
     if (typeof window !== "undefined") sessionStorage.setItem(SESSION_KEY, "1");
   };
@@ -43,8 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") sessionStorage.removeItem(SESSION_KEY);
   };
 
+  const updateProfile = (patch: Partial<Doctor>) => {
+    setDoctor((prev) => {
+      const base = prev ?? { name: "", email: GOOGLE_EMAIL };
+      const next: Doctor = { ...base, ...patch };
+      saveProfile(next);
+      return next;
+    });
+  };
+
   return (
-    <AuthCtx.Provider value={{ doctor, token, signIn, signOut }}>
+    <AuthCtx.Provider value={{ doctor, token, signIn, signOut, updateProfile }}>
       {children}
     </AuthCtx.Provider>
   );
