@@ -27,6 +27,9 @@ function ProfileSetup() {
 
   useEffect(() => {
     if (!doctor) navigate({ to: "/login" });
+    else if (doctor.profileComplete && !window.location.search.includes("edit")) {
+      navigate({ to: "/dashboard" });
+    }
   }, [doctor, navigate]);
 
   if (!doctor) return null;
