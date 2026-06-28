@@ -12,10 +12,13 @@ import { usePatient, useVisitsForPatient } from "@/lib/use-store";
 import { upsertPatient, touchRecent, addAttachment, deleteAttachment, uid, deleteVisit } from "@/lib/mock-store";
 import { calcAge, formatDate, formatDateTime } from "@/lib/format";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
-import { Pencil, Plus, Phone, FileDown, Printer, Trash2, Upload, FileText } from "lucide-react";
+import { Pencil, Plus, Phone, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { exportVisitPdf } from "@/lib/export-pdf";
+import { DAS28Panel } from "@/components/das28-panel";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { daysUntil } from "@/lib/format";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
