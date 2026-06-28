@@ -71,7 +71,7 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
           <SheetTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-accent" />
             AI Assistant
-            <Badge variant="outline" className="ml-auto text-[10px]">Mock · Gemini</Badge>
+            <Badge variant="outline" className="ml-auto text-[10px]">Gemini AI</Badge>
           </SheetTitle>
           <p className="text-xs text-muted-foreground">Patient data is de-identified before any AI request.</p>
         </SheetHeader>
