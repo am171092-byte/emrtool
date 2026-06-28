@@ -1,45 +1,42 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
   getAllPatients,
   getAllVisits,
-  getPatient,
-  getVisit,
-  getVisitsForPatient,
   getRecentIds,
   subscribe,
 } from "./mock-store";
 
-const serverSnap = () => 0;
+// Stable empty refs for SSR snapshots.
+const EMPTY_ARR: never[] = [];
+const ssrArr = () => EMPTY_ARR as unknown as never[];
+const ssrUndef = () => undefined;
 
 export function useAllPatients() {
-  return useSyncExternalStore(subscribe, getAllPatients, () => [] as ReturnType<typeof getAllPatients>);
+  return useSyncExternalStore(subscribe, getAllPatients, ssrArr as () => ReturnType<typeof getAllPatients>);
 }
 export function useAllVisits() {
-  return useSyncExternalStore(subscribe, getAllVisits, () => [] as ReturnType<typeof getAllVisits>);
+  return useSyncExternalStore(subscribe, getAllVisits, ssrArr as () => ReturnType<typeof getAllVisits>);
 }
 export function usePatient(id: string | undefined) {
-  return useSyncExternalStore(
-    subscribe,
-    () => (id ? getPatient(id) : undefined),
-    () => undefined,
-  );
+  const all = useAllPatients();
+  return useMemo(() => (id ? all.find((p) => p.id === id) : undefined), [all, id]);
 }
 export function useVisit(id: string | undefined) {
-  return useSyncExternalStore(
-    subscribe,
-    () => (id ? getVisit(id) : undefined),
-    () => undefined,
-  );
+  const all = useAllVisits();
+  return useMemo(() => (id ? all.find((v) => v.id === id) : undefined), [all, id]);
 }
 export function useVisitsForPatient(id: string | undefined) {
-  return useSyncExternalStore(
-    subscribe,
-    () => (id ? getVisitsForPatient(id) : []),
-    () => [] as ReturnType<typeof getVisitsForPatient>,
+  const all = useAllVisits();
+  return useMemo(
+    () =>
+      id
+        ? all.filter((v) => v.patientId === id).sort((a, b) => +new Date(b.date) - +new Date(a.date))
+        : [],
+    [all, id],
   );
 }
 export function useRecentIds() {
-  return useSyncExternalStore(subscribe, getRecentIds, () => [] as string[]);
+  return useSyncExternalStore(subscribe, getRecentIds, ssrArr as () => string[]);
 }
 
-void serverSnap;
+void ssrUndef;

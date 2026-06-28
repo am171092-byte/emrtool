@@ -7,7 +7,15 @@ const RECENT_KEY = "rheumcare_recent_v1";
 
 const isBrowser = typeof window !== "undefined";
 
-function read<T>(key: string, fallback: T): T {
+// In-memory cache so snapshots are stable references for useSyncExternalStore.
+const cache: { patients: Patient[]; visits: Visit[]; recent: string[]; loaded: boolean } = {
+  patients: [],
+  visits: [],
+  recent: [],
+  loaded: false,
+};
+
+function readLS<T>(key: string, fallback: T): T {
   if (!isBrowser) return fallback;
   try {
     const raw = localStorage.getItem(key);
@@ -18,7 +26,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write<T>(key: string, val: T) {
+function writeLS<T>(key: string, val: T) {
   if (!isBrowser) return;
   localStorage.setItem(key, JSON.stringify(val));
 }
@@ -242,29 +250,55 @@ function seed() {
     });
   });
 
-  write(PATIENTS_KEY, patients);
-  write(VISITS_KEY, visits);
-  write(RECENT_KEY, patients.map((p) => p.id));
+  writeLS(PATIENTS_KEY, patients);
+  writeLS(VISITS_KEY, visits);
+  writeLS(RECENT_KEY, patients.map((p) => p.id));
   localStorage.setItem(SEED_KEY, "1");
 }
 
-if (isBrowser) seed();
+function ensureLoaded() {
+  if (cache.loaded) return;
+  if (isBrowser) {
+    seed();
+    cache.patients = readLS<Patient[]>(PATIENTS_KEY, []);
+    cache.visits = readLS<Visit[]>(VISITS_KEY, []);
+    cache.recent = readLS<string[]>(RECENT_KEY, []);
+  }
+  cache.loaded = true;
+}
 
-// ---- accessors ----
+if (isBrowser) ensureLoaded();
+
+// ---- accessors (return stable references from cache) ----
 export function getAllPatients(): Patient[] {
-  return read<Patient[]>(PATIENTS_KEY, []);
+  ensureLoaded();
+  return cache.patients;
 }
 export function getAllVisits(): Visit[] {
-  return read<Visit[]>(VISITS_KEY, []);
+  ensureLoaded();
+  return cache.visits;
 }
-export function setPatients(p: Patient[]) { write(PATIENTS_KEY, p); notify(); }
-export function setVisits(v: Visit[]) { write(VISITS_KEY, v); notify(); }
+export function setPatients(p: Patient[]) {
+  cache.patients = p;
+  writeLS(PATIENTS_KEY, p);
+  notify();
+}
+export function setVisits(v: Visit[]) {
+  cache.visits = v;
+  writeLS(VISITS_KEY, v);
+  notify();
+}
+function setRecent(r: string[]) {
+  cache.recent = r;
+  writeLS(RECENT_KEY, r);
+  notify();
+}
 
 export function getPatient(id: string): Patient | undefined {
   return getAllPatients().find((p) => p.id === id);
 }
 export function upsertPatient(p: Patient) {
-  const all = getAllPatients();
+  const all = [...getAllPatients()];
   const i = all.findIndex((x) => x.id === p.id);
   if (i >= 0) all[i] = p;
   else all.unshift(p);
@@ -276,19 +310,21 @@ export function deletePatient(id: string) {
 }
 
 export function touchRecent(id: string) {
-  const recent = read<string[]>(RECENT_KEY, []);
+  const recent = cache.recent;
   const next = [id, ...recent.filter((x) => x !== id)].slice(0, 20);
-  write(RECENT_KEY, next);
   // update lastAccessedAt
-  const all = getAllPatients();
+  const all = [...getAllPatients()];
   const i = all.findIndex((p) => p.id === id);
   if (i >= 0) {
     all[i] = { ...all[i], lastAccessedAt: new Date().toISOString() };
-    setPatients(all);
+    cache.patients = all;
+    writeLS(PATIENTS_KEY, all);
   }
+  setRecent(next);
 }
 export function getRecentIds(): string[] {
-  return read<string[]>(RECENT_KEY, []);
+  ensureLoaded();
+  return cache.recent;
 }
 
 export function getVisitsForPatient(id: string): Visit[] {
@@ -300,7 +336,7 @@ export function getVisit(visitId: string): Visit | undefined {
   return getAllVisits().find((v) => v.id === visitId);
 }
 export function upsertVisit(v: Visit) {
-  const all = getAllVisits();
+  const all = [...getAllVisits()];
   const i = all.findIndex((x) => x.id === v.id);
   if (i >= 0) all[i] = v;
   else all.unshift(v);
@@ -311,7 +347,7 @@ export function deleteVisit(id: string) {
 }
 
 export function addAttachment(patientId: string, a: Attachment) {
-  const all = getAllPatients();
+  const all = [...getAllPatients()];
   const i = all.findIndex((p) => p.id === patientId);
   if (i >= 0) {
     all[i] = { ...all[i], attachments: [a, ...all[i].attachments] };
@@ -319,7 +355,7 @@ export function addAttachment(patientId: string, a: Attachment) {
   }
 }
 export function deleteAttachment(patientId: string, aid: string) {
-  const all = getAllPatients();
+  const all = [...getAllPatients()];
   const i = all.findIndex((p) => p.id === patientId);
   if (i >= 0) {
     all[i] = { ...all[i], attachments: all[i].attachments.filter((a) => a.id !== aid) };
