@@ -108,13 +108,14 @@ export async function loadPatient(id: string): Promise<Patient | undefined> {
 }
 
 export async function upsertPatient(p: Patient): Promise<void> {
+  const norm = normalizePatient(p);
   const all = [...cache.patients];
-  const i = all.findIndex((x) => x.id === p.id);
-  if (i >= 0) all[i] = p;
-  else all.unshift(p);
+  const i = all.findIndex((x) => x.id === norm.id);
+  if (i >= 0) all[i] = norm;
+  else all.unshift(norm);
   cache.patients = all;
   notify();
-  await api(`/api/patients/${p.id}`, { method: "PUT", body: JSON.stringify(p) });
+  await api(`/api/patients/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
 }
 
 export async function deletePatient(id: string): Promise<void> {
