@@ -121,6 +121,14 @@ export interface Patient {
   createdAt: string;
   lastAccessedAt?: string;
   nextFollowUp?: string;
+  nextVisitReason?: string;
+  das28History?: DAS28Entry[];
+}
+
+export interface DAS28Entry extends DAS28Data {
+  id: string;
+  date: string;
+  joints?: JointState[];
 }
 
 export interface Doctor {
