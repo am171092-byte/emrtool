@@ -6,7 +6,7 @@ import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import type { JointState } from "@/lib/types";
 import { fullJointLabel } from "@/lib/joints";
 import { usePatient } from "@/lib/use-store";
-import { RotateCcw, Calculator } from "lucide-react";
+import { RotateCcw, Calculator, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/patients/$patientId/joint-map")({
   head: () => ({ meta: [{ title: "Joint map — RheumCare" }] }),
