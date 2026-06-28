@@ -67,13 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetch(`${API_BASE}/api/profile`, {
             headers: { Authorization: `Bearer ${existingToken}` },
           })
-            .then((r) => (r.ok ? r.json() : null))
+            .then((r) => (r.ok ? r.json().catch(() => null) : null))
             .then((profile) => {
-              setDoctor(
-                profile && profile.name
-                  ? { ...profile, email: user.email, avatar: user.picture }
-                  : { name: user.name || "", email: user.email, avatar: user.picture, profileComplete: false },
-              );
+              if (profile && profile.name) {
+                setDoctor({ ...profile, email: user.email, avatar: user.picture, profileComplete: profile.profileComplete ?? true });
+              } else {
+                // Profile endpoint missing/empty but token is valid — treat as complete to avoid setup loop.
+                setDoctor({ name: user.name || "", email: user.email, avatar: user.picture, profileComplete: true });
+              }
             }),
         )
         .catch(() => {
