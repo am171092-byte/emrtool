@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { TagInput } from "@/components/tag-input";
 import { usePatient, useVisitsForPatient } from "@/lib/use-store";
-import { upsertPatient, touchRecent, addAttachment, deleteAttachment, uid, deleteVisit } from "@/lib/mock-store";
+import { upsertPatient, touchRecent, addAttachment, deleteAttachment, uid, deleteVisit } from "@/lib/api-store";
 import { calcAge, formatDate, formatDateTime } from "@/lib/format";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import { Pencil, Plus, Phone, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus } from "lucide-react";

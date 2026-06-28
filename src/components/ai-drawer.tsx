@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles, Send, FileText, Pill, BookOpen, ShieldCheck, GitBranch, Users } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { aiAssist, type AITask, deidentify } from "@/lib/ai-mock";
+import { aiAssist, type AITask, deidentify } from "@/lib/ai-service";
 import type { Patient } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

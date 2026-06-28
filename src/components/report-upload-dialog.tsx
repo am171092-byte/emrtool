@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Loader2, FileText, Trash2 } from "lucide-react";
-import type { Patient, Investigation, Attachment } from "@/lib/types";
-import { uid, addAttachment, upsertPatient } from "@/lib/mock-store";
+import type { Patient, Investigation } from "@/lib/types";
+import { uid, addAttachment, upsertPatient } from "@/lib/api-store";
 import { extractReport, type ExtractedReport } from "@/lib/report-extract";
 import { toast } from "sonner";
 
@@ -57,21 +57,22 @@ export function ReportUploadDialog({ patient, file, onClose }: Props) {
   };
   const removeRow = (id: string) => setRows((r) => r.filter((row) => row.id !== id));
 
-  const confirm = () => {
+  const confirm = async () => {
     if (!file || !canConfirm) return;
-    const att: Attachment = {
-      id: uid("att"),
-      filename: file.name,
-      size: file.size,
-      type: file.type,
-      date: new Date().toISOString(),
-      dataUrl,
-    };
-    addAttachment(patient.id, att);
-    const merged = [...rows.filter((r) => r.testName.trim()), ...patient.investigations];
-    upsertPatient({ ...patient, investigations: merged });
-    toast.success(`Report saved · ${rows.length} value(s) added to Labs`);
-    onClose();
+    try {
+      const base64Data = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      await addAttachment(patient.id, {
+        filename: file.name,
+        mimeType: file.type,
+        base64Data,
+      });
+      const merged = [...rows.filter((r) => r.testName.trim()), ...patient.investigations];
+      await upsertPatient({ ...patient, investigations: merged });
+      toast.success(`Report saved · ${rows.length} value(s) added to Labs`);
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save report");
+    }
   };
 
   return (
