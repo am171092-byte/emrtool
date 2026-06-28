@@ -27,7 +27,7 @@ const NAV = [
 
 export function AppShell() {
   const navigate = useNavigate();
-  const { doctor, signOut } = useAuth();
+  const { doctor, loading, signOut } = useAuth();
   const patients = useAllPatients();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -35,9 +35,10 @@ export function AppShell() {
 
   // Redirect to login if not authenticated; to profile setup if first-time user
   useEffect(() => {
+    if (loading) return;
     if (!doctor) navigate({ to: "/login" });
     else if (!doctor.profileComplete) navigate({ to: "/profile-setup" });
-  }, [doctor, navigate]);
+  }, [doctor, loading, navigate]);
 
 
   // Keyboard shortcuts
