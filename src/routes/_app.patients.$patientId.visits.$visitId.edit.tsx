@@ -13,6 +13,6 @@ function EditVisit() {
   const p = usePatient(patientId);
   const v = useVisit(visitId);
   const nav = useNavigate();
-  if (!p || !v) return <div className="text-sm text-muted-foreground">Not found.</div>;
+  if (!p || !v) return <div className="flex items-center justify-center h-full py-16"><Loader2 className="h-6 w-6 animate-spin" /><span className="ml-2 text-sm text-muted-foreground">Loading...</span></div>;
   return <VisitForm patient={p} visit={v} onSaved={() => nav({ to: "/patients/$patientId", params: { patientId } })} onCancel={() => nav({ to: "/patients/$patientId", params: { patientId } })} />;
 }
