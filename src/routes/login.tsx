@@ -14,7 +14,7 @@ function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (doctor) navigate({ to: "/dashboard" });
+    if (doctor) navigate({ to: doctor.profileComplete ? "/dashboard" : "/profile-setup" });
   }, [doctor, navigate]);
 
   return (
@@ -27,13 +27,14 @@ function Login() {
         <p className="mt-1 text-sm text-muted-foreground">Your clinic. Your data. Your Drive.</p>
 
         <Button
-          onClick={() => { signIn(); navigate({ to: "/dashboard" }); }}
+          onClick={() => { signIn(); }}
           className="mt-6 w-full bg-foreground text-background hover:bg-foreground/90"
           size="lg"
         >
           <GoogleIcon className="h-4 w-4 mr-2" />
           Sign in with Google
         </Button>
+
 
         <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
           Your patient records are stored exclusively in your private Google Drive. Nobody else can access them.
