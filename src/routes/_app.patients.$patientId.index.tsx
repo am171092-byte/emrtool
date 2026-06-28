@@ -401,5 +401,63 @@ function AttachmentsTab({ patient }: { patient: ReturnType<typeof usePatient> & 
   );
 }
 
+function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
+  if (!patient) return null;
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(patient.nextFollowUp?.slice(0, 10) ?? "");
+  const [reason, setReason] = useState(patient.nextVisitReason ?? "");
+  const due = daysUntil(patient.nextFollowUp);
+
+  const save = () => {
+    if (!date) return;
+    upsertPatient({ ...patient, nextFollowUp: new Date(date).toISOString(), nextVisitReason: reason || undefined });
+    toast.success("Next visit scheduled");
+    setOpen(false);
+  };
+  const clear = () => {
+    upsertPatient({ ...patient, nextFollowUp: undefined, nextVisitReason: undefined });
+    setDate(""); setReason("");
+  };
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next visit</div>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-7 px-2"><CalendarPlus className="h-3 w-3 mr-1" />{patient.nextFollowUp ? "Edit" : "Schedule"}</Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 space-y-2 z-50">
+            <div>
+              <label className="text-xs text-muted-foreground">Date</label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Reason / notes</label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Lab review, DAS28" />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={save} size="sm" className="flex-1">Save</Button>
+              {patient.nextFollowUp && <Button onClick={clear} variant="ghost" size="sm">Clear</Button>}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+      {patient.nextFollowUp ? (
+        <div>
+          <div className="font-semibold text-sm">{formatDate(patient.nextFollowUp)}</div>
+          <div className="text-xs text-muted-foreground">
+            {due != null && (due < 0 ? `${-due} days overdue` : due === 0 ? "Today" : `in ${due} day${due === 1 ? "" : "s"}`)}
+            {patient.nextVisitReason ? ` · ${patient.nextVisitReason}` : ""}
+          </div>
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground">No follow-up scheduled.</div>
+      )}
+    </Card>
+  );
+}
+
+
 // avoid unused
 void jsPDF;
