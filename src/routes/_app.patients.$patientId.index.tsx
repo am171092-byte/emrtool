@@ -60,6 +60,8 @@ function PatientRecord() {
             {p.primaryDiagnosis && <Badge className="mt-3" variant="secondary">{p.primaryDiagnosis}</Badge>}
           </Card>
 
+          <NextVisitCard patient={p} />
+
           <Card className="p-4 space-y-3">
             <EditableSection title="Allergies" tone="danger">
               <TagInput value={p.allergies} onChange={(v) => updateP({ allergies: v })} placeholder="Add allergy" tone="danger" />
