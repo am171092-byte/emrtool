@@ -5,6 +5,7 @@ import { DAS28Calculator } from "@/components/das28-calculator";
 import { usePatient, useVisitsForPatient } from "@/lib/use-store";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, CartesianGrid } from "recharts";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 
 const search = z.object({ tjc: z.number().optional(), sjc: z.number().optional() }).parse;
 
