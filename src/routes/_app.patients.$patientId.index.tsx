@@ -19,6 +19,7 @@ import { exportVisitPdf } from "@/lib/export-pdf";
 import { DAS28Panel } from "@/components/das28-panel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { daysUntil } from "@/lib/format";
+import { ReportUploadDialog } from "@/components/report-upload-dialog";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
@@ -360,23 +361,22 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
 
 function AttachmentsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   if (!patient) return null;
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      addAttachment(patient.id, { id: uid("att"), filename: file.name, size: file.size, type: file.type, date: new Date().toISOString(), dataUrl: String(reader.result) });
-      toast.success("Attachment uploaded");
-    };
-    reader.readAsDataURL(file);
+    setPendingFile(file);
+    e.target.value = "";
   };
 
   return (
     <>
+      <ReportUploadDialog patient={patient} file={pendingFile} onClose={() => setPendingFile(null)} />
       <Card className="p-6 border-dashed border-2 text-center">
         <label className="cursor-pointer flex flex-col items-center gap-2">
           <Upload className="h-6 w-6 text-muted-foreground" />
-          <div className="text-sm">Drop file or click to upload</div>
+          <div className="text-sm font-medium">Upload diagnostic report</div>
+          <div className="text-xs text-muted-foreground">AI verifies patient name and auto-fills lab values</div>
           <input type="file" className="hidden" onChange={onFile} accept="image/*,application/pdf" />
         </label>
       </Card>
