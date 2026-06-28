@@ -166,7 +166,7 @@ export function getVisit(visitId: string): Visit | undefined {
 
 export async function loadVisit(visitId: string): Promise<Visit | undefined> {
   try {
-    const visit = await api<Visit>(`/api/visits/${visitId}`);
+    const visit = normalizeVisit(await api<Visit>(`/api/visits/${visitId}`));
     const idx = cache.visits.findIndex((v) => v.id === visitId);
     if (idx >= 0) cache.visits[idx] = visit;
     else cache.visits.unshift(visit);
