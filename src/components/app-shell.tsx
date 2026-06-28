@@ -22,7 +22,7 @@ const NAV = [
   { to: "/patients", label: "Patients", icon: Users, mobile: true, mobileLabel: "Patients" },
   { to: "/patients/new", label: "New Patient", icon: Plus, mobile: true, mobileLabel: "New" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, mobile: true, mobileLabel: "Calendar" },
-  { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, mobile: true, mobileLabel: "AI" },
+  
 ] as const;
 
 export function AppShell() {
