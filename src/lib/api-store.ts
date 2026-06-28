@@ -96,7 +96,7 @@ export function getPatient(id: string): Patient | undefined {
 
 export async function loadPatient(id: string): Promise<Patient | undefined> {
   try {
-    const patient = await api<Patient>(`/api/patients/${id}`);
+    const patient = normalizePatient(await api<Patient>(`/api/patients/${id}`));
     const idx = cache.patients.findIndex((p) => p.id === id);
     if (idx >= 0) cache.patients[idx] = patient;
     else cache.patients.unshift(patient);
