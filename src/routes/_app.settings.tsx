@@ -51,7 +51,7 @@ function SettingsPage() {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Profile</h2>
-          <Button variant="outline" size="sm" onClick={() => nav({ to: "/profile-setup" })}>Edit profile</Button>
+          <Button variant="outline" size="sm" onClick={() => { window.location.href = "/profile-setup?edit=1"; }}>Edit profile</Button>
         </div>
         <div className="flex items-center gap-3">
           <InitialsAvatar name={doctor.name || doctor.email} size={56} />
