@@ -7,7 +7,15 @@ const RECENT_KEY = "rheumcare_recent_v1";
 
 const isBrowser = typeof window !== "undefined";
 
-function read<T>(key: string, fallback: T): T {
+// In-memory cache so snapshots are stable references for useSyncExternalStore.
+const cache: { patients: Patient[]; visits: Visit[]; recent: string[]; loaded: boolean } = {
+  patients: [],
+  visits: [],
+  recent: [],
+  loaded: false,
+};
+
+function readLS<T>(key: string, fallback: T): T {
   if (!isBrowser) return fallback;
   try {
     const raw = localStorage.getItem(key);
@@ -18,7 +26,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write<T>(key: string, val: T) {
+function writeLS<T>(key: string, val: T) {
   if (!isBrowser) return;
   localStorage.setItem(key, JSON.stringify(val));
 }
