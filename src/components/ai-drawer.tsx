@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles, Send, FileText, Pill, BookOpen, ShieldCheck, GitBranch, Users } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import { aiAssist, type AITask, deidentify } from "@/lib/ai-service";
 import type { Patient } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -19,14 +20,16 @@ interface Props {
   patient?: Patient;
 }
 
-const QUICK_ACTIONS: { task: AITask; label: string; icon: ReactNode; build?: (p?: Patient) => Record<string, unknown> }[] = [
-  { task: "soap_generation", label: "Generate SOAP", icon: <FileText className="h-4 w-4" />, build: (p) => ({ chiefComplaint: "Joint pain", patient: p?.fullName }) },
+const QUICK_ACTIONS: { task: AITask; label: string; icon: ReactNode }[] = [
+  { task: "soap_generation", label: "Generate SOAP", icon: <FileText className="h-4 w-4" /> },
   { task: "drug_info", label: "Drug info", icon: <Pill className="h-4 w-4" /> },
   { task: "guideline_summary", label: "Guideline", icon: <BookOpen className="h-4 w-4" /> },
-  { task: "safety_check", label: "Safety check", icon: <ShieldCheck className="h-4 w-4" />, build: (p) => ({ medications: (p?.medications ?? []).map((m) => m.drug), allergies: p?.allergies ?? [], comorbidities: p?.comorbidities ?? [] }) },
+  { task: "safety_check", label: "Safety check", icon: <ShieldCheck className="h-4 w-4" /> },
   { task: "differential", label: "Differential", icon: <GitBranch className="h-4 w-4" /> },
   { task: "similar_cases", label: "Similar cases", icon: <Users className="h-4 w-4" /> },
 ];
+
+const INPUT_TASKS: AITask[] = ["drug_info", "guideline_summary", "soap_generation"];
 
 export function AIDrawer({ open, onOpenChange, patient }: Props) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
@@ -40,12 +43,54 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
     setLoading(true);
     setActiveTask(task);
     try {
-      const payload = { ...extra };
-      const resp = await aiAssist(task, payload);
+      const resp = await aiAssist(task, extra);
       const out = deident && patient ? deidentify(resp, patient.fullName) : resp;
       setMsgs((m) => [...m, { role: "assistant", content: out }]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const buildAutoPayload = (task: AITask): Record<string, unknown> | null => {
+    const meds = (patient?.medications ?? []).map((m) => m.drug);
+    const problems = patient?.problemList ?? [];
+    const comorbidities = patient?.comorbidities ?? [];
+    const allergies = patient?.allergies ?? [];
+    if (task === "safety_check") {
+      return { medications: meds, allergies, comorbidities };
+    }
+    if (task === "differential") {
+      if (problems.length === 0) {
+        toast.error("Please add symptoms or a problem list first");
+        return null;
+      }
+      return { problemList: problems, medications: meds, comorbidities };
+    }
+    if (task === "similar_cases") {
+      if (problems.length === 0) {
+        toast.error("Please add a problem list first");
+        return null;
+      }
+      return { problemList: problems, medications: meds };
+    }
+    return {};
+  };
+
+  const submitInputTask = (task: AITask, text: string) => {
+    const t = text.trim();
+    if (!t) return;
+    if (task === "drug_info") return runTask(task, { drug_name: t });
+    if (task === "guideline_summary") return runTask(task, { topic: t });
+    if (task === "soap_generation") {
+      const vitals = patient?.vitals ?? [];
+      const latestVitals = vitals[vitals.length - 1];
+      return runTask(task, {
+        chiefComplaint: t,
+        medications: (patient?.medications ?? []).map((m) => m.drug),
+        comorbidities: patient?.comorbidities ?? [],
+        problemList: patient?.problemList ?? [],
+        vitals: latestVitals,
+      });
     }
   };
 
@@ -63,6 +108,12 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
       setLoading(false);
     }
   };
+
+  const placeholderFor = (t: AITask) =>
+    t === "drug_info" ? "Drug name…"
+    : t === "guideline_summary" ? "Topic (e.g. RA, SLE, gout)"
+    : t === "soap_generation" ? "Chief complaint…"
+    : "";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -95,11 +146,12 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               className="justify-start text-xs h-auto py-2"
               disabled={loading}
               onClick={() => {
-                if (q.task === "drug_info" || q.task === "guideline_summary" || q.task === "differential") {
+                if (INPUT_TASKS.includes(q.task)) {
                   setActiveTask(q.task);
                   setTaskInput("");
                 } else {
-                  void runTask(q.task, q.build?.(patient) ?? {});
+                  const payload = buildAutoPayload(q.task);
+                  if (payload) void runTask(q.task, payload);
                 }
               }}
             >
@@ -109,16 +161,15 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
           ))}
         </div>
 
-        {activeTask && (activeTask === "drug_info" || activeTask === "guideline_summary" || activeTask === "differential") && (
+        {activeTask && INPUT_TASKS.includes(activeTask) && (
           <div className="px-3 py-2 border-b flex gap-2">
             <Input
-              placeholder={activeTask === "drug_info" ? "Drug name…" : activeTask === "guideline_summary" ? "Topic (e.g. RA, SLE, gout)" : "Clinical summary…"}
+              placeholder={placeholderFor(activeTask)}
               value={taskInput}
               onChange={(e) => setTaskInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && taskInput.trim()) {
-                  const payload = activeTask === "drug_info" ? { drug_name: taskInput } : activeTask === "guideline_summary" ? { topic: taskInput } : { clinical_summary: taskInput };
-                  void runTask(activeTask, payload);
+                  void submitInputTask(activeTask, taskInput);
                   setTaskInput("");
                   setActiveTask(null);
                 }
