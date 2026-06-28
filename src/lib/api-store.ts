@@ -23,6 +23,29 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+function normalizePatient(p: Patient): Patient {
+  return {
+    ...p,
+    allergies: p.allergies ?? [],
+    medications: p.medications ?? [],
+    comorbidities: p.comorbidities ?? [],
+    problemList: p.problemList ?? [],
+    vitals: p.vitals ?? [],
+    investigations: p.investigations ?? [],
+    attachments: p.attachments ?? [],
+    das28History: p.das28History ?? [],
+  };
+}
+
+function normalizeVisit(v: Visit): Visit {
+  return {
+    ...v,
+    prescriptions: v.prescriptions ?? [],
+    investigations: v.investigations ?? [],
+    soap: v.soap ?? { subjective: "", objective: "", assessment: "", plan: "" },
+  };
+}
+
 const cache: {
   patients: Patient[];
   visits: Visit[];
@@ -46,7 +69,7 @@ export async function loadFromBackend(): Promise<void> {
   if (cache.loaded || cache.loading) return;
   cache.loading = true;
   try {
-    const patients = await api<Patient[]>("/api/patients");
+    const patients = (await api<Patient[]>("/api/patients")).map(normalizePatient);
     cache.patients = patients;
     cache.recent = [...patients]
       .sort((a, b) => {
@@ -73,7 +96,7 @@ export function getPatient(id: string): Patient | undefined {
 
 export async function loadPatient(id: string): Promise<Patient | undefined> {
   try {
-    const patient = await api<Patient>(`/api/patients/${id}`);
+    const patient = normalizePatient(await api<Patient>(`/api/patients/${id}`));
     const idx = cache.patients.findIndex((p) => p.id === id);
     if (idx >= 0) cache.patients[idx] = patient;
     else cache.patients.unshift(patient);
@@ -85,13 +108,14 @@ export async function loadPatient(id: string): Promise<Patient | undefined> {
 }
 
 export async function upsertPatient(p: Patient): Promise<void> {
+  const norm = normalizePatient(p);
   const all = [...cache.patients];
-  const i = all.findIndex((x) => x.id === p.id);
-  if (i >= 0) all[i] = p;
-  else all.unshift(p);
+  const i = all.findIndex((x) => x.id === norm.id);
+  if (i >= 0) all[i] = norm;
+  else all.unshift(norm);
   cache.patients = all;
   notify();
-  await api(`/api/patients/${p.id}`, { method: "PUT", body: JSON.stringify(p) });
+  await api(`/api/patients/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
 }
 
 export async function deletePatient(id: string): Promise<void> {
@@ -120,7 +144,7 @@ export function getRecentIds(): string[] { return cache.recent; }
 
 export async function loadVisitsForPatient(patientId: string): Promise<Visit[]> {
   try {
-    const visits = await api<Visit[]>(`/api/patients/${patientId}/visits`);
+    const visits = (await api<Visit[]>(`/api/patients/${patientId}/visits`)).map(normalizeVisit);
     cache.visits = [...cache.visits.filter((v) => v.patientId !== patientId), ...visits];
     notify();
     return visits;
@@ -142,7 +166,7 @@ export function getVisit(visitId: string): Visit | undefined {
 
 export async function loadVisit(visitId: string): Promise<Visit | undefined> {
   try {
-    const visit = await api<Visit>(`/api/visits/${visitId}`);
+    const visit = normalizeVisit(await api<Visit>(`/api/visits/${visitId}`));
     const idx = cache.visits.findIndex((v) => v.id === visitId);
     if (idx >= 0) cache.visits[idx] = visit;
     else cache.visits.unshift(visit);
@@ -154,13 +178,14 @@ export async function loadVisit(visitId: string): Promise<Visit | undefined> {
 }
 
 export async function upsertVisit(v: Visit): Promise<void> {
+  const norm = normalizeVisit(v);
   const all = [...cache.visits];
-  const i = all.findIndex((x) => x.id === v.id);
-  if (i >= 0) all[i] = v;
-  else all.unshift(v);
+  const i = all.findIndex((x) => x.id === norm.id);
+  if (i >= 0) all[i] = norm;
+  else all.unshift(norm);
   cache.visits = all;
   notify();
-  await api(`/api/visits/${v.id}`, { method: "PUT", body: JSON.stringify(v) });
+  await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
 }
 
 export async function deleteVisit(id: string): Promise<void> {
