@@ -144,7 +144,7 @@ export function getRecentIds(): string[] { return cache.recent; }
 
 export async function loadVisitsForPatient(patientId: string): Promise<Visit[]> {
   try {
-    const visits = await api<Visit[]>(`/api/patients/${patientId}/visits`);
+    const visits = (await api<Visit[]>(`/api/patients/${patientId}/visits`)).map(normalizeVisit);
     cache.visits = [...cache.visits.filter((v) => v.patientId !== patientId), ...visits];
     notify();
     return visits;
