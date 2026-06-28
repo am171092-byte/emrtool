@@ -1,76 +1,127 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+/**
+ * auth-context.tsx — Real Google OAuth flow via backend.
+ */
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { Doctor } from "./types";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 interface AuthState {
   doctor: Doctor | null;
   token: string | null;
+  loading: boolean;
   signIn: () => void;
   signOut: () => void;
-  updateProfile: (patch: Partial<Doctor>) => void;
+  updateProfile: (patch: Partial<Doctor>) => Promise<void>;
 }
 
 const AuthCtx = createContext<AuthState | null>(null);
 
-const SESSION_KEY = "rheumcare_auth_v1";
-const PROFILE_KEY = "rheumcare_profile_v1";
+let inMemoryToken: string | null = null;
+const SESSION_TOKEN_KEY = "rheumcare_token";
 
-// Mocks the email returned by Google after OAuth. Profile fields start blank
-// so the user fills them in via /profile-setup the first time they sign in.
-const GOOGLE_EMAIL = "doctor@rheumcare.app";
-
-function loadProfile(): Doctor | null {
+function getSessionToken(): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    return raw ? (JSON.parse(raw) as Doctor) : null;
-  } catch {
-    return null;
-  }
+  return sessionStorage.getItem(SESSION_TOKEN_KEY);
 }
 
-function saveProfile(d: Doctor) {
+function setSessionToken(token: string | null) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(d));
+  if (token) sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+  else sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  inMemoryToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return inMemoryToken || getSessionToken();
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(SESSION_KEY) === "1") {
-      const stored = loadProfile();
-      setDoctor(stored ?? { name: "", email: GOOGLE_EMAIL, profileComplete: false });
-      setToken("mock_jwt_token_in_memory_only");
+
+    const params = new URLSearchParams(window.location.search);
+    const callbackToken = params.get("token");
+    if (callbackToken) {
+      setSessionToken(callbackToken);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    const existingToken = getSessionToken();
+    if (existingToken) {
+      inMemoryToken = existingToken;
+      setToken(existingToken);
+
+      fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${existingToken}` },
+      })
+        .then((r) => {
+          if (!r.ok) throw new Error("Token expired");
+          return r.json();
+        })
+        .then((user) =>
+          fetch(`${API_BASE}/api/profile`, {
+            headers: { Authorization: `Bearer ${existingToken}` },
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((profile) => {
+              setDoctor(
+                profile && profile.name
+                  ? { ...profile, email: user.email, avatar: user.picture }
+                  : { name: user.name || "", email: user.email, avatar: user.picture, profileComplete: false },
+              );
+            }),
+        )
+        .catch(() => {
+          setSessionToken(null);
+          setToken(null);
+          setDoctor(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, []);
 
-  const signIn = () => {
-    const stored = loadProfile();
-    const d: Doctor = stored ?? { name: "", email: GOOGLE_EMAIL, profileComplete: false };
-    setDoctor(d);
-    setToken("mock_jwt_token_in_memory_only");
-    if (typeof window !== "undefined") sessionStorage.setItem(SESSION_KEY, "1");
-  };
+  const signIn = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/url`);
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err) {
+      console.error("Failed to get auth URL:", err);
+    }
+  }, []);
 
-  const signOut = () => {
-    setDoctor(null);
+  const signOut = useCallback(() => {
+    setSessionToken(null);
     setToken(null);
-    if (typeof window !== "undefined") sessionStorage.removeItem(SESSION_KEY);
-  };
+    setDoctor(null);
+  }, []);
 
-  const updateProfile = (patch: Partial<Doctor>) => {
+  const updateProfile = useCallback(async (patch: Partial<Doctor>) => {
+    const currentToken = getAuthToken();
+    if (!currentToken) return;
     setDoctor((prev) => {
-      const base = prev ?? { name: "", email: GOOGLE_EMAIL };
-      const next: Doctor = { ...base, ...patch };
-      saveProfile(next);
+      const next = { ...(prev || { name: "", email: "" }), ...patch } as Doctor;
+      fetch(`${API_BASE}/api/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify(next),
+      }).catch(console.error);
       return next;
     });
-  };
+  }, []);
 
   return (
-    <AuthCtx.Provider value={{ doctor, token, signIn, signOut, updateProfile }}>
+    <AuthCtx.Provider value={{ doctor, token, loading, signIn, signOut, updateProfile }}>
       {children}
     </AuthCtx.Provider>
   );
