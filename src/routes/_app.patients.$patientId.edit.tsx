@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { PatientForm } from "@/components/patient-form";
 import { usePatient } from "@/lib/use-store";
 
