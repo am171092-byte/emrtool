@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Plus, Bone, Sparkles, Search, Settings, LogOut, Stethoscope } from "lucide-react";
+import { Home, Users, Plus, CalendarDays, Sparkles, Search, Settings, LogOut, Stethoscope } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useAllPatients } from "@/lib/use-store";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: Home, mobile: true, mobileLabel: "Home" },
   { to: "/patients", label: "Patients", icon: Users, mobile: true, mobileLabel: "Patients" },
-  { to: "/patients/new", label: "New Visit", icon: Plus, mobile: true, mobileLabel: "New" },
-  { to: "/das28", label: "Joint Map / DAS28", icon: Bone, mobile: true, mobileLabel: "DAS28" },
+  { to: "/patients/new", label: "New Patient", icon: Plus, mobile: true, mobileLabel: "New" },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays, mobile: true, mobileLabel: "Calendar" },
   { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, mobile: true, mobileLabel: "AI" },
 ] as const;
 
