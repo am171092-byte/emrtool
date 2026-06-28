@@ -69,7 +69,7 @@ export async function loadFromBackend(): Promise<void> {
   if (cache.loaded || cache.loading) return;
   cache.loading = true;
   try {
-    const patients = await api<Patient[]>("/api/patients");
+    const patients = (await api<Patient[]>("/api/patients")).map(normalizePatient);
     cache.patients = patients;
     cache.recent = [...patients]
       .sort((a, b) => {
