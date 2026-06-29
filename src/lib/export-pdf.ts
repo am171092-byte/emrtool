@@ -266,12 +266,13 @@ function renderPrescriptionTable(
   ensureSpace: (h: number) => void,
 ) {
   const headers = ["Drug", "Dose", "Frequency", "Duration", "Notes"];
-  // column widths (mm) summing to CONTENT_W = 190
-  const cols = [60, 25, 35, 25, 45];
-  const padX = 2;     // ~6px horizontal cell padding
-  const padY = 1.6;   // ~6px vertical cell padding
+  // Column widths as percentages of CONTENT_W: 35 / 15 / 20 / 15 / 15
+  const pct = [0.35, 0.15, 0.20, 0.15, 0.15];
+  const cols = pct.map((p) => p * CONTENT_W);
+  const padX = 2.5;   // ~8px horizontal cell padding
+  const padY = 2.2;   // ~6-8px vertical cell padding
   const size = BODY_SIZE;
-  const lineH = size * 0.42;
+  const lineH = size * 0.45;
 
   const colX = (i: number) => {
     let x = LEFT;
@@ -279,52 +280,58 @@ function renderPrescriptionTable(
     return x;
   };
 
-  // Header row
-  ensureSpace(lineH + padY * 2);
-  let y = getY();
-  doc.setFillColor(235, 238, 242);
-  doc.rect(LEFT, y - lineH + 0.5, CONTENT_W, lineH + padY * 2, "F");
-  doc.setFont(FONT, "bold");
-  doc.setFontSize(size);
-  doc.setTextColor(40);
-  headers.forEach((h, i) => doc.text(h, colX(i) + padX, y + padY));
-  y += lineH + padY * 2;
-
-  // Rows
-  rxs.forEach((r, idx) => {
-    const cells = [
-      r.drug || "—",
-      r.dose || "",
-      r.frequency || "",
-      r.duration || "",
-      r.notes || r.instructions || "",
-    ];
-    // wrap each cell to its column width
+  const drawRow = (
+    cells: string[],
+    opts: { bold?: boolean; fill?: [number, number, number] | null; borderColor: number; borderWidth: number },
+  ) => {
     const wrapped = cells.map((txt, i) =>
-      doc.splitTextToSize(String(txt), cols[i] - padX * 2),
+      doc.splitTextToSize(String(txt || ""), cols[i] - padX * 2),
     );
-    const rowLines = Math.max(...wrapped.map((w) => w.length));
+    const rowLines = Math.max(1, ...wrapped.map((w) => w.length));
     const rowH = rowLines * lineH + padY * 2;
     ensureSpace(rowH);
-    y = getY();
+    let y = getY();
 
-    if (idx % 2 === 0) {
-      doc.setFillColor(248, 249, 251);
+    if (opts.fill) {
+      doc.setFillColor(opts.fill[0], opts.fill[1], opts.fill[2]);
       doc.rect(LEFT, y, CONTENT_W, rowH, "F");
     }
 
-    cells.forEach((_, i) => {
-      doc.setFont(FONT, i === 0 ? "bold" : "normal");
-      doc.setFontSize(size);
-      doc.setTextColor(i === 0 ? 20 : 45);
-      const lines = wrapped[i];
+    doc.setFont(FONT, opts.bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    doc.setTextColor(opts.bold ? 40 : 30);
+
+    wrapped.forEach((lines: string[], i: number) => {
       lines.forEach((ln: string, li: number) => {
-        doc.text(ln, colX(i) + padX, y + padY + lineH * (li + 1) - lineH * 0.25);
+        // baseline of line `li` inside the cell (top-aligned with padY)
+        const baseline = y + padY + lineH * (li + 1) - lineH * 0.25;
+        doc.text(ln, colX(i) + padX, baseline);
       });
     });
 
-    y += rowH;
-    setY(y);
+    // bottom border
+    doc.setDrawColor(opts.borderColor);
+    doc.setLineWidth(opts.borderWidth);
+    doc.line(LEFT, y + rowH, PAGE_W - RIGHT, y + rowH);
+
+    setY(y + rowH);
+  };
+
+  // Header row: bold, light gray bg, 1px solid #ccc bottom border
+  drawRow(headers, { bold: true, fill: [240, 240, 240], borderColor: 204, borderWidth: 0.35 });
+
+  // Data rows: white bg, 0.5px solid #e0e0e0 bottom border
+  rxs.forEach((r) => {
+    drawRow(
+      [
+        r.drug || "—",
+        r.dose || "",
+        r.frequency || "",
+        r.duration || "",
+        r.notes || r.instructions || "",
+      ],
+      { fill: [255, 255, 255], borderColor: 224, borderWidth: 0.18 },
+    );
   });
 
   // Bottom border
