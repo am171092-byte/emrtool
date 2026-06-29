@@ -150,7 +150,7 @@ function PatientRecord() {
                     <summary className="flex items-center justify-between cursor-pointer list-none">
                       <div>
                         <div className="font-semibold text-sm">{formatDateTime(v.date)}</div>
-                        <div className="text-xs text-muted-foreground">{v.chiefComplaint}</div>
+                        <div className="text-xs text-muted-foreground">{(v.chiefComplaints && v.chiefComplaints.length > 0 ? v.chiefComplaints : (v.chiefComplaint ? [v.chiefComplaint] : [])).join(", ")}</div>
                       </div>
                       <div className="flex gap-1 no-print">
                         <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); nav({ to: "/patients/$patientId/visits/$visitId/edit", params: { patientId, visitId: v.id } }); }}>Edit</Button>

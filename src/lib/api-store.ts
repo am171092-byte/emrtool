@@ -39,8 +39,13 @@ function normalizePatient(p: Patient): Patient {
 
 function normalizeVisit(v: Visit): Visit {
   const s: any = v.soap ?? {};
+  const anyV: any = v;
+  const chiefComplaints: string[] = Array.isArray(anyV.chiefComplaints)
+    ? anyV.chiefComplaints
+    : (anyV.chiefComplaint ? [anyV.chiefComplaint] : []);
   return {
     ...v,
+    chiefComplaints,
     prescriptions: v.prescriptions ?? [],
     investigations: v.investigations ?? [],
     soap: {

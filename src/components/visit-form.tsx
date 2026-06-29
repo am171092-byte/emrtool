@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
 import { AIDrawer } from "@/components/ai-drawer";
+import { TagInput } from "@/components/tag-input";
 import { createCalendarEvent } from "@/lib/calendar-service";
 
 interface Props {
@@ -34,7 +35,11 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const [date, setDate] = useState(visit?.date.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
-  const [cc, setCc] = useState(visit?.chiefComplaint ?? "");
+  const [chiefComplaints, setChiefComplaints] = useState<string[]>(
+    visit?.chiefComplaints && visit.chiefComplaints.length > 0
+      ? visit.chiefComplaints
+      : (visit?.chiefComplaint ? [visit.chiefComplaint] : [])
+  );
   const [hpi, setHpi] = useState(visit?.soap.historyOfPresentingIllness ?? visit?.soap.subjective ?? "");
   const [currentVisit, setCurrentVisit] = useState(visit?.soap.currentVisit ?? "");
   const [examination, setExamination] = useState(visit?.soap.examination ?? visit?.soap.objective ?? "");
@@ -72,7 +77,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
     setDirty(true);
-  }, [cc, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap]);
+  }, [chiefComplaints, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap]);
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -82,14 +87,15 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cc.trim()) { toast.error("Chief complaint is required"); return; }
+    if (chiefComplaints.length === 0) { toast.error("At least one chief complaint is required"); return; }
     const id = visit?.id ?? uid("vis");
     const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
     const next: Visit = {
       id, patientId: patient.id,
       date: new Date(date).toISOString(),
       time,
-      chiefComplaint: cc,
+      chiefComplaints,
+      chiefComplaint: chiefComplaints.join(", "),
       soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
       vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
       prescriptions,
@@ -135,8 +141,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Field label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
             <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-            <Field label="Chief complaint" className="col-span-2 md:col-span-1"><Input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="e.g. Joint pain worsening over 2 weeks" /></Field>
           </div>
+          <Field label="Chief complaints">
+            <TagInput value={chiefComplaints} onChange={setChiefComplaints} placeholder="Type a complaint, press Enter" />
+          </Field>
         </Card>
 
         <div className="grid lg:grid-cols-2 gap-4">
