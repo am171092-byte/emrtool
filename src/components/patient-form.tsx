@@ -23,6 +23,7 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
   const [dob, setDob] = useState(initial?.dob ?? "");
   const [sex, setSex] = useState<Sex>(initial?.sex ?? "Female");
   const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
   const [allergies, setAllergies] = useState<string[]>(initial?.allergies ?? []);
   const [meds, setMeds] = useState<Medication[]>(initial?.medications ?? []);
@@ -30,6 +31,7 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
   const [problems, setProblems] = useState<string[]>(initial?.problemList ?? []);
   const [pmh, setPmh] = useState(initial?.pastMedicalHistory ?? "");
   const [primaryDx, setPrimaryDx] = useState(initial?.primaryDiagnosis ?? "");
+  const [tdi, setTdi] = useState(initial?.tdi ?? "");
 
   // Vitals (initial only)
   const [bpS, setBpS] = useState<number | "">("");
