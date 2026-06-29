@@ -160,9 +160,10 @@ function PatientRecord() {
                       </div>
                     </summary>
                     <div className="mt-3 space-y-3 text-sm border-t pt-3">
-                      <Section label="Subjective">{v.soap.subjective || "—"}</Section>
-                      <Section label="Objective">{v.soap.objective || "—"}</Section>
-                      <Section label="Assessment">{v.soap.assessment || "—"}</Section>
+                      <Section label="History of Presenting Illness">{v.soap.historyOfPresentingIllness || v.soap.subjective || "—"}</Section>
+                      <Section label="Current Visit">{v.soap.currentVisit || "—"}</Section>
+                      <Section label="Examination">{v.soap.examination || v.soap.objective || "—"}</Section>
+                      <Section label="Impression">{v.soap.impression || v.soap.assessment || "—"}</Section>
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
                       {v.prescriptions.length > 0 && (
                         <Section label="Prescriptions">
