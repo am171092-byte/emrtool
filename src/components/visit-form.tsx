@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
 import { AIDrawer } from "@/components/ai-drawer";
+import { TagInput } from "@/components/tag-input";
 import { createCalendarEvent } from "@/lib/calendar-service";
 
 interface Props {
