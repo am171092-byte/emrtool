@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, RefreshCw, UserPlus, Check, X, Calendar as CalendarIcon } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  UserPlus,
+  Check,
+  X,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth-context";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/calendar")({
   head: () => ({ meta: [{ title: "Calendar — RheumCare" }] }),
@@ -35,10 +45,11 @@ interface Candidate {
 interface CalEvent {
   id: string;
   title: string;
-  start: string; // ISO datetime
+  start: string;
   end?: string;
   status: EventStatus;
   patient?: Candidate;
+  matchedPatient?: Candidate;
   candidates?: Candidate[];
 }
 
@@ -54,7 +65,9 @@ interface CalendarResponse {
 
 function authHeaders(): HeadersInit {
   const t = getAuthToken();
-  return t ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  return t
+    ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
 }
 
 function fmtTime(iso: string) {
@@ -96,6 +109,43 @@ function CandidateLine({ c }: { c: Candidate }) {
 }
 
 function CalendarPage() {
+  const [view, setView] = useState<"upcoming" | "past">("upcoming");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold">Calendar</h1>
+          <p className="text-sm text-muted-foreground">
+            Appointments from your Google Calendar.
+          </p>
+        </div>
+        <div className="inline-flex rounded-md border bg-card p-0.5">
+          <Button
+            size="sm"
+            variant={view === "upcoming" ? "default" : "ghost"}
+            onClick={() => setView("upcoming")}
+          >
+            Upcoming
+          </Button>
+          <Button
+            size="sm"
+            variant={view === "past" ? "default" : "ghost"}
+            onClick={() => setView("past")}
+          >
+            Past Appointments
+          </Button>
+        </div>
+      </div>
+
+      {view === "upcoming" ? <UpcomingView /> : <MonthView />}
+    </div>
+  );
+}
+
+/* ---------------- Upcoming view (unchanged behavior) ---------------- */
+
+function UpcomingView() {
   const navigate = useNavigate();
   const [data, setData] = useState<CalendarResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,8 +194,7 @@ function CalendarPage() {
     }));
   }, [data]);
 
-  const setBusyFor = (id: string, v: boolean) =>
-    setBusy((b) => ({ ...b, [id]: v }));
+  const setBusyFor = (id: string, v: boolean) => setBusy((b) => ({ ...b, [id]: v }));
 
   const updateEvent = (id: string, patch: Partial<CalEvent>) => {
     setData((d) => {
@@ -170,10 +219,7 @@ function CalendarPage() {
         body: JSON.stringify({
           eventTitle: evt.title,
           patientId: patient.id,
-          createVisit: {
-            date: evt.start.slice(0, 10),
-            time: fmtTimeISO(evt.start),
-          },
+          createVisit: { date: evt.start.slice(0, 10), time: fmtTimeISO(evt.start) },
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -192,10 +238,7 @@ function CalendarPage() {
       const res = await fetch(`${API_BASE}/api/calendar/create-patient`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({
-          eventTitle: evt.title,
-          eventDate: evt.start,
-        }),
+        body: JSON.stringify({ eventTitle: evt.title, eventDate: evt.start }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const created = (await res.json()) as Candidate;
@@ -210,11 +253,7 @@ function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Calendar</h1>
-          <p className="text-sm text-muted-foreground">Upcoming appointments from your Google Calendar.</p>
-        </div>
+      <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -273,7 +312,10 @@ function CalendarPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate({ to: "/patients/$patientId", params: { patientId: evt.patient!.id } })
+                            navigate({
+                              to: "/patients/$patientId",
+                              params: { patientId: evt.patient!.id },
+                            })
                           }
                           className="text-left hover:underline"
                         >
@@ -396,6 +438,253 @@ function CandidatesPicker({
           <UserPlus className="h-4 w-4 mr-1" /> Create new patient
         </Button>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- Month / Past Appointments view ---------------- */
+
+function ymd(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function sameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function MonthView() {
+  const navigate = useNavigate();
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const [cursor, setCursor] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selected, setSelected] = useState<Date | null>(today);
+  const [events, setEvents] = useState<CalEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const monthStart = useMemo(
+    () => new Date(cursor.getFullYear(), cursor.getMonth(), 1),
+    [cursor],
+  );
+  const monthEnd = useMemo(
+    () => new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0),
+    [cursor],
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const start = ymd(monthStart);
+      const end = ymd(monthEnd);
+      const res = await fetch(
+        `${API_BASE}/api/calendar/range?start=${start}&end=${end}`,
+        { headers: authHeaders() },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const evts: CalEvent[] = Array.isArray(json) ? json : (json.events ?? []);
+      setEvents(evts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load month");
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [monthStart, monthEnd]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Build calendar grid (Mon-Sun)
+  const cells = useMemo(() => {
+    const startDow = (monthStart.getDay() + 6) % 7; // Mon=0
+    const daysInMonth = monthEnd.getDate();
+    const rows: (Date | null)[] = [];
+    for (let i = 0; i < startDow; i++) rows.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      rows.push(new Date(monthStart.getFullYear(), monthStart.getMonth(), d));
+    }
+    while (rows.length % 7 !== 0) rows.push(null);
+    return rows;
+  }, [monthStart, monthEnd]);
+
+  const byDay = useMemo(() => {
+    const m = new Map<string, CalEvent[]>();
+    events.forEach((e) => {
+      const k = ymd(new Date(e.start));
+      const arr = m.get(k) ?? [];
+      arr.push(e);
+      m.set(k, arr);
+    });
+    for (const arr of m.values()) arr.sort((a, b) => a.start.localeCompare(b.start));
+    return m;
+  }, [events]);
+
+  const selectedEvents = selected ? byDay.get(ymd(selected)) ?? [] : [];
+
+  const monthLabel = cursor.toLocaleString(undefined, { month: "long", year: "numeric" });
+
+  return (
+    <div className="grid gap-4 md:grid-cols-5">
+      <Card className="p-3 md:col-span-3">
+        <div className="flex items-center justify-between mb-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() =>
+              setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))
+            }
+            aria-label="Previous month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="font-medium flex items-center gap-2">
+            {monthLabel}
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() =>
+              setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))
+            }
+            aria-label="Next month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-7 text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+            <div key={d} className="px-1 py-1 text-center">{d}</div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            if (!d) return <div key={i} className="aspect-square min-h-10" />;
+            const k = ymd(d);
+            const dayEvents = byDay.get(k) ?? [];
+            const isToday = sameDay(d, today);
+            const isSelected = selected && sameDay(d, selected);
+            const isFuture = d > today;
+            const has = dayEvents.length > 0;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setSelected(d)}
+                className={cn(
+                  "relative aspect-square min-h-10 rounded-md border text-sm flex flex-col items-center justify-center gap-1 transition-colors",
+                  "hover:bg-accent",
+                  isSelected
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border",
+                  isToday && !isSelected && "ring-2 ring-primary/60",
+                  isFuture && !isSelected && !has && "opacity-60",
+                )}
+              >
+                <span className={cn("leading-none", isSelected ? "" : "")}>{d.getDate()}</span>
+                {has && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[10px] font-medium",
+                      isSelected
+                        ? "bg-primary-foreground text-primary"
+                        : "bg-teal-500 text-white",
+                    )}
+                  >
+                    {dayEvents.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {error && (
+          <div className="text-xs text-destructive mt-3">Failed to load: {error}</div>
+        )}
+      </Card>
+
+      <Card className="p-4 md:col-span-2">
+        <div className="mb-3">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            {selected ? formatDate(selected.toISOString()) : "Select a date"}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {selectedEvents.length === 0
+              ? "No appointments"
+              : `${selectedEvents.length} appointment${selectedEvents.length === 1 ? "" : "s"}`}
+          </div>
+        </div>
+
+        {selectedEvents.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-8 text-center">
+            <CalendarIcon className="h-6 w-6 mx-auto mb-2 opacity-50" />
+            Nothing scheduled.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {selectedEvents.map((evt) => {
+              const matched = evt.matchedPatient ?? evt.patient;
+              return (
+                <div
+                  key={evt.id}
+                  className="flex items-start gap-3 p-2 rounded-md border bg-card"
+                >
+                  <div className="font-mono text-xs text-muted-foreground w-12 shrink-0 pt-0.5">
+                    {fmtTime(evt.start)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {matched ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate({
+                            to: "/patients/$patientId",
+                            params: { patientId: matched.id },
+                          })
+                        }
+                        className="text-left hover:underline w-full"
+                      >
+                        <div className="text-sm font-medium truncate">{matched.fullName}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {[
+                            matched.age != null ? `${matched.age}y` : null,
+                            matched.sex,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || evt.title}
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="text-sm text-muted-foreground truncate">
+                        {evt.title}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
