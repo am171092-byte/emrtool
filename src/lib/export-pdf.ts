@@ -334,11 +334,6 @@ function renderPrescriptionTable(
     );
   });
 
-  // Bottom border
-  doc.setDrawColor(220);
-  doc.setLineWidth(0.15);
-  doc.line(LEFT, y, PAGE_W - RIGHT, y);
-  setY(y);
   doc.setTextColor(20);
 }
 
