@@ -140,8 +140,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Field label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
             <Field label="Time"><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-            <Field label="Chief complaint" className="col-span-2 md:col-span-1"><Input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="e.g. Joint pain worsening over 2 weeks" /></Field>
           </div>
+          <Field label="Chief complaints">
+            <TagInput value={chiefComplaints} onChange={setChiefComplaints} placeholder="Type a complaint, press Enter" />
+          </Field>
         </Card>
 
         <div className="grid lg:grid-cols-2 gap-4">
