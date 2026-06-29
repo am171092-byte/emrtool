@@ -2,25 +2,26 @@ import { jsPDF } from "jspdf";
 import type { Patient, Visit } from "./types";
 import { calcAge } from "./format";
 
-// Layout constants (mm). 80px @ 96dpi ≈ 21.17mm reserved at top for letterhead.
+// Layout constants (mm). 1pt = 0.3528mm.
 const PAGE_W = 210;
 const PAGE_H = 297;
-const TOP_MARGIN = 21.17;
-const BOTTOM_MARGIN = 15;
-const LEFT = 14;
-const RIGHT = 14;
+const TOP_FIRST = 127;      // 5 in / 360pt — letterhead area on page 1
+const TOP_REST = 25.4;      // 1 in on subsequent pages
+const BOTTOM_MARGIN = 76.2; // 3 in / 216pt
+const LEFT = 38.1;          // 1.5 in / 108pt
+const RIGHT = 38.1;         // 1.5 in / 108pt
 const CONTENT_W = PAGE_W - LEFT - RIGHT;
 
 type RenderOpts = { mode: "save" | "print" };
 
 function buildVisitPdf(p: Patient, v: Visit): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  let y = TOP_MARGIN;
+  let y = TOP_FIRST;
 
   const ensureSpace = (h: number) => {
     if (y + h > PAGE_H - BOTTOM_MARGIN) {
       doc.addPage();
-      y = TOP_MARGIN;
+      y = TOP_REST;
     }
   };
 
