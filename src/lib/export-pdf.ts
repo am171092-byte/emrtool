@@ -153,6 +153,7 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
   // ---------- Prescriptions table ----------
   if (v.prescriptions && v.prescriptions.length > 0) {
     sectionTitle("Prescriptions");
+    y += TABLE_GAP_BELOW_HEADER;
     renderPrescriptionTable(doc, v.prescriptions, () => y, (ny) => { y = ny; }, ensureSpace);
   }
 
