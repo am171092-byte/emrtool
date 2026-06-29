@@ -67,6 +67,8 @@ function Dashboard() {
         <Stat label="Pending follow-ups" value={upcoming.length} />
       </div>
 
+      <TodaysAppointments />
+
       <div className="grid gap-4 md:grid-cols-5">
         <Card className="p-5 md:col-span-3">
           <div className="flex items-center justify-between mb-3">
