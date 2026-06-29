@@ -20,6 +20,7 @@ import { DAS28Panel } from "@/components/das28-panel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { daysUntil } from "@/lib/format";
 import { ReportUploadDialog } from "@/components/report-upload-dialog";
+import { createCalendarEvent } from "@/lib/calendar-service";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
