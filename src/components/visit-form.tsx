@@ -110,12 +110,27 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
       das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
     };
-    upsertVisit(next);
-    if (nextFollowUpIso) {
-      upsertPatient({ ...patient, nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined });
-    }
+    await upsertVisit(next);
+
+    // Replace patient's current medications with this visit's prescriptions
+    const newMeds = prescriptions
+      .filter((p) => p.drug && p.drug.trim())
+      .map((p) => ({
+        id: uid("med"),
+        drug: p.drug,
+        dose: p.dose ?? "",
+        frequency: p.frequency ?? "",
+        duration: p.duration ?? "",
+      }));
+    const patientPatch = {
+      ...patient,
+      medications: newMeds,
+      ...(nextFollowUpIso ? { nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined } : {}),
+    };
+    await upsertPatient(patientPatch);
     setDirty(false);
     toast.success("Visit saved");
+    toast.success("Current medications updated from visit prescriptions");
 
     const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
     if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
