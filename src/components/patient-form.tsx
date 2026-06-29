@@ -185,15 +185,18 @@ function Field({ label, required, children, className }: { label: string; requir
     </div>
   );
 }
-function NumField({ label, value, onChange }: { label: string; value: number | ""; onChange: (v: number | "") => void }) {
+function NumField({ label, value, onChange, suffix }: { label: string; value: number | ""; onChange: (v: number | "") => void; suffix?: string }) {
   return (
     <Field label={label}>
-      <Input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-        className="font-mono"
-      />
+      <div className="relative">
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+          className={`font-mono ${suffix ? "pr-14" : ""}`}
+        />
+        {suffix && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">{suffix}</span>}
+      </div>
     </Field>
   );
 }
