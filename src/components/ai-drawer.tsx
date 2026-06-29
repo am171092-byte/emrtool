@@ -118,6 +118,7 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-accent" />
