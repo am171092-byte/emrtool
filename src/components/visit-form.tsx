@@ -111,8 +111,12 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
     };
     upsertVisit(next);
+    if (nextFollowUpIso) {
+      upsertPatient({ ...patient, nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined });
+    }
     setDirty(false);
     toast.success("Visit saved");
+
     const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
     if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
       const ok = await createCalendarEvent({
