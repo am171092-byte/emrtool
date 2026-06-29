@@ -193,13 +193,17 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 {investigations.map((inv, i) => (
                   <div key={inv.id} className="grid grid-cols-12 gap-1">
                     <Input className="col-span-6" placeholder="Test" value={inv.testName} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, testName: e.target.value } : x))} />
-                    <select className="col-span-3 rounded-md border bg-background px-2 text-sm" value={inv.urgency} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, urgency: e.target.value as "Routine" | "Urgent" } : x))}>
-                      <option>Routine</option><option>Urgent</option>
+                    <select className="col-span-3 rounded-md border bg-background px-2 text-sm" value={inv.urgency} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, urgency: e.target.value as "Routine" | "Urgent" | "Follow up" } : x))}>
+                      <option>Routine</option><option>Urgent</option><option>Follow up</option>
                     </select>
                     <Input className="col-span-2" placeholder="Notes" value={inv.notes ?? ""} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, notes: e.target.value } : x))} />
                     <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setInvestigations(investigations.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4">
+                <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Subjective Notes</Label>
+                <Textarea rows={3} value={investigationNotes} onChange={(e) => setInvestigationNotes(e.target.value)} placeholder="Overall notes about investigations…" className="resize-y" />
               </div>
             </Card>
 
@@ -207,7 +211,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
               <h2 className="font-semibold mb-2">Next follow-up</h2>
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Date"><Input type="date" value={nextFollowUp} onChange={(e) => setNextFollowUp(e.target.value)} /></Field>
-                <Field label="Instructions"><Input value={followUpNote} onChange={(e) => setFollowUpNote(e.target.value)} /></Field>
+                <Field label="Advice"><Input value={followUpNote} onChange={(e) => setFollowUpNote(e.target.value)} /></Field>
               </div>
             </Card>
           </div>
