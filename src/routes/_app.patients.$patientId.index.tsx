@@ -447,9 +447,16 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
 
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2 flex-wrap">
+        <label className="inline-flex">
+          <Button size="sm" variant="outline" asChild>
+            <span className="cursor-pointer"><Upload className="h-3 w-3 mr-1" /> Upload & Extract Lab Report</span>
+          </Button>
+          <input type="file" className="hidden" accept="image/jpeg,image/png,image/jpg,application/pdf" onChange={onExtractFile} />
+        </label>
         <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add"}</Button>
       </div>
+      <LabExtractDialog patient={patient} file={extractFile} onClose={() => setExtractFile(null)} />
       {open && (
         <Card className="p-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
           <div><label className="text-xs text-muted-foreground">Date</label><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></div>
