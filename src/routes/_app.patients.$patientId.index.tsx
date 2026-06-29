@@ -448,10 +448,8 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
   return (
     <>
       <div className="flex justify-end gap-2 flex-wrap">
-        <label className="inline-flex">
-          <Button size="sm" variant="outline" asChild>
-            <span className="cursor-pointer"><Upload className="h-3 w-3 mr-1" /> Upload & Extract Lab Report</span>
-          </Button>
+        <label className="inline-flex items-center justify-center gap-1 h-9 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 text-sm font-medium cursor-pointer">
+          <Upload className="h-3 w-3" /> Upload & Extract Lab Report
           <input type="file" className="hidden" accept="image/jpeg,image/png,image/jpg,application/pdf" onChange={onExtractFile} />
         </label>
         <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add"}</Button>
