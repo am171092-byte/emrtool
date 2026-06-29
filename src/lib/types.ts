@@ -15,8 +15,10 @@ export interface Vitals {
   bpSystolic?: number;
   bpDiastolic?: number;
   hr?: number;
+  respiratoryRate?: number;
   weight?: number;
   height?: number;
+  /** Temperature in °F */
   temperature?: number;
   spo2?: number;
 }

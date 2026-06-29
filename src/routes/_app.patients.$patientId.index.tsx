@@ -245,9 +245,10 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
   const [height, setHeight] = useState<number | "">("");
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
+  const [respRate, setRespRate] = useState<number | "">("");
 
   const add = () => {
-    if (!bpS && !bpD && !hr && !weight && !temp && !spo2) return;
+    if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate) return;
     upsertPatient({
       ...patient,
       vitals: [
@@ -255,6 +256,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
           bpSystolic: typeof bpS === "number" ? bpS : undefined,
           bpDiastolic: typeof bpD === "number" ? bpD : undefined,
           hr: typeof hr === "number" ? hr : undefined,
+          respiratoryRate: typeof respRate === "number" ? respRate : undefined,
           weight: typeof weight === "number" ? weight : undefined,
           height: typeof height === "number" ? height : patient.vitals?.[0]?.height,
           temperature: typeof temp === "number" ? temp : undefined,
@@ -263,7 +265,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
         ...v,
       ],
     });
-    setBpS(""); setBpD(""); setHr(""); setWeight(""); setHeight(""); setTemp(""); setSpo2("");
+    setBpS(""); setBpD(""); setHr(""); setRespRate(""); setWeight(""); setHeight(""); setTemp(""); setSpo2("");
     toast.success("Vitals added");
   };
 
@@ -278,17 +280,18 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
       <Card className="p-3 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">Date</th><th className="p-2">BP</th><th className="p-2">HR</th><th className="p-2">Wt</th><th className="p-2">Ht</th><th className="p-2">BMI</th><th className="p-2">Temp</th><th className="p-2">SpO₂</th></tr>
+            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th></tr>
           </thead>
           <tbody>
             <tr className="border-t">
               <td className="p-1 text-xs text-muted-foreground">Add new</td>
               <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={bpS} onChange={(e) => setBpS(e.target.value === "" ? "" : Number(e.target.value))} placeholder="120" /><span className="self-center">/</span><Input className="h-8 w-14 font-mono" type="number" value={bpD} onChange={(e) => setBpD(e.target.value === "" ? "" : Number(e.target.value))} placeholder="80" /></div></td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={hr} onChange={(e) => setHr(e.target.value === "" ? "" : Number(e.target.value))} /></td>
+              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={respRate} onChange={(e) => setRespRate(e.target.value === "" ? "" : Number(e.target.value))} /></td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={weight} onChange={(e) => setWeight(e.target.value === "" ? "" : Number(e.target.value))} /></td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={height} onChange={(e) => setHeight(e.target.value === "" ? "" : Number(e.target.value))} /></td>
               <td className="p-1 font-mono text-xs">—</td>
-              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} /></td>
+              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} placeholder="98.6" /></td>
               <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={spo2} onChange={(e) => setSpo2(e.target.value === "" ? "" : Number(e.target.value))} /><Button size="sm" onClick={add}>Add</Button></div></td>
             </tr>
             {v.map((row) => (
@@ -296,6 +299,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 text-xs">{formatDate(row.date)}</td>
                 <td className="p-2 font-mono">{row.bpSystolic ?? "—"}/{row.bpDiastolic ?? "—"}</td>
                 <td className="p-2 font-mono">{row.hr ?? "—"}</td>
+                <td className="p-2 font-mono">{row.respiratoryRate ?? "—"}</td>
                 <td className="p-2 font-mono">{row.weight ?? "—"}</td>
                 <td className="p-2 font-mono">{row.height ?? "—"}</td>
                 <td className="p-2 font-mono">{row.weight && row.height ? (row.weight / ((row.height / 100) ** 2)).toFixed(1) : "—"}</td>
@@ -328,11 +332,13 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
 function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   if (!patient) return null;
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical" });
+  const today = () => new Date().toISOString().slice(0, 10);
+  const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
   const add = () => {
     if (!draft.testName.trim()) return;
-    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date().toISOString(), ...draft }, ...patient.investigations] });
-    setDraft({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" });
+    const { date, ...rest } = draft;
+    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date(date).toISOString(), ...rest }, ...patient.investigations] });
+    setDraft({ testName: "", result: "", units: "", referenceRange: "", status: "Normal", date: today() });
     setOpen(false);
     toast.success("Investigation added");
   };
@@ -342,7 +348,8 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
         <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add"}</Button>
       </div>
       {open && (
-        <Card className="p-3 grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+        <Card className="p-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
+          <div><label className="text-xs text-muted-foreground">Date</label><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></div>
           <div className="col-span-2"><label className="text-xs text-muted-foreground">Test</label><Input value={draft.testName} onChange={(e) => setDraft({ ...draft, testName: e.target.value })} /></div>
           <div><label className="text-xs text-muted-foreground">Result</label><Input value={draft.result} onChange={(e) => setDraft({ ...draft, result: e.target.value })} /></div>
           <div><label className="text-xs text-muted-foreground">Units</label><Input value={draft.units} onChange={(e) => setDraft({ ...draft, units: e.target.value })} /></div>

@@ -53,6 +53,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [weight, setWeight] = useState<number | "">(prefVitals?.weight ?? "");
   const [temp, setTemp] = useState<number | "">(prefVitals?.temperature ?? "");
   const [spo2, setSpo2] = useState<number | "">(prefVitals?.spo2 ?? "");
+  const [respRate, setRespRate] = useState<number | "">(prefVitals?.respiratoryRate ?? "");
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(visit?.prescriptions ?? []);
   const [investigations, setInvestigations] = useState<Investigation[]>(visit?.investigations ?? []);
@@ -97,7 +98,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       chiefComplaints,
       chiefComplaint: chiefComplaints.join(", "),
       soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
-      vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
+      vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
       prescriptions,
       investigations,
       investigationNotes: investigationNotes || undefined,
@@ -163,12 +164,13 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
               <h2 className="font-semibold">Vitals</h2>
               <p className="text-xs text-muted-foreground">Pre-filled from last visit. Update as needed.</p>
               <div className="grid grid-cols-3 gap-2 text-xs">
-                <NumField label="BP Sys" value={bpS} onChange={setBpS} />
-                <NumField label="BP Dia" value={bpD} onChange={setBpD} />
-                <NumField label="HR" value={hr} onChange={setHr} />
-                <NumField label="Weight" value={weight} onChange={setWeight} />
-                <NumField label="Temp" value={temp} onChange={setTemp} />
-                <NumField label="SpO₂" value={spo2} onChange={setSpo2} />
+                <NumField label="BP Sys" suffix="mmHg" value={bpS} onChange={setBpS} />
+                <NumField label="BP Dia" suffix="mmHg" value={bpD} onChange={setBpD} />
+                <NumField label="HR" suffix="bpm" value={hr} onChange={setHr} />
+                <NumField label="Resp Rate" suffix="/min" value={respRate} onChange={setRespRate} />
+                <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
+                <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
+                <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
               </div>
             </Card>
 
@@ -259,8 +261,15 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return <div className={className}><Label className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</Label>{children}</div>;
 }
-function NumField({ label, value, onChange }: { label: string; value: number | ""; onChange: (v: number | "") => void }) {
-  return <Field label={label}><Input type="number" value={value} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} className="font-mono h-9" /></Field>;
+function NumField({ label, value, onChange, suffix }: { label: string; value: number | ""; onChange: (v: number | "") => void; suffix?: string }) {
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <Input type="number" value={value} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} className={`font-mono h-9 ${suffix ? "pr-12" : ""}`} />
+        {suffix && <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[10px] text-muted-foreground">{suffix}</span>}
+      </div>
+    </Field>
+  );
 }
 function SoapField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (

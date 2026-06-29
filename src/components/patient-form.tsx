@@ -41,6 +41,7 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
   const [height, setHeight] = useState<number | "">("");
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
+  const [respRate, setRespRate] = useState<number | "">("");
 
   const calcBmi = useMemo(() => bmi(typeof weight === "number" ? weight : undefined, typeof height === "number" ? height : undefined), [weight, height]);
   const age = dob ? calcAge(dob) : null;
@@ -52,13 +53,14 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
       return;
     }
     const id = initial?.id ?? uid("p");
-    const vitalsEntry = (bpS || bpD || hr || weight || height || temp || spo2)
+    const vitalsEntry = (bpS || bpD || hr || weight || height || temp || spo2 || respRate)
       ? [{
           id: uid("v"),
           date: new Date().toISOString(),
           bpSystolic: typeof bpS === "number" ? bpS : undefined,
           bpDiastolic: typeof bpD === "number" ? bpD : undefined,
           hr: typeof hr === "number" ? hr : undefined,
+          respiratoryRate: typeof respRate === "number" ? respRate : undefined,
           weight: typeof weight === "number" ? weight : undefined,
           height: typeof height === "number" ? height : undefined,
           temperature: typeof temp === "number" ? temp : undefined,
@@ -152,14 +154,15 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
         <Card className="p-5 space-y-4">
           <h2 className="font-semibold">Initial vitals <span className="text-xs font-normal text-muted-foreground">(optional)</span></h2>
           <div className="grid gap-3 md:grid-cols-3">
-            <NumField label="BP Systolic (mmHg)" value={bpS} onChange={setBpS} />
-            <NumField label="BP Diastolic (mmHg)" value={bpD} onChange={setBpD} />
-            <NumField label="Heart rate (bpm)" value={hr} onChange={setHr} />
-            <NumField label="Weight (kg)" value={weight} onChange={setWeight} />
-            <NumField label="Height (cm)" value={height} onChange={setHeight} />
+            <NumField label="BP Systolic" suffix="mmHg" value={bpS} onChange={setBpS} />
+            <NumField label="BP Diastolic" suffix="mmHg" value={bpD} onChange={setBpD} />
+            <NumField label="Heart rate" suffix="bpm" value={hr} onChange={setHr} />
+            <NumField label="Respiratory rate" suffix="/min" value={respRate} onChange={setRespRate} />
+            <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
+            <NumField label="Height" suffix="cm" value={height} onChange={setHeight} />
             <Field label="BMI"><Input value={calcBmi ?? ""} readOnly className="font-mono" /></Field>
-            <NumField label="Temperature (°C)" value={temp} onChange={setTemp} />
-            <NumField label="SpO2 (%)" value={spo2} onChange={setSpo2} />
+            <NumField label="Temperature" suffix="°F" value={temp} onChange={setTemp} />
+            <NumField label="SpO2" suffix="%" value={spo2} onChange={setSpo2} />
           </div>
         </Card>
       )}
@@ -182,15 +185,18 @@ function Field({ label, required, children, className }: { label: string; requir
     </div>
   );
 }
-function NumField({ label, value, onChange }: { label: string; value: number | ""; onChange: (v: number | "") => void }) {
+function NumField({ label, value, onChange, suffix }: { label: string; value: number | ""; onChange: (v: number | "") => void; suffix?: string }) {
   return (
     <Field label={label}>
-      <Input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-        className="font-mono"
-      />
+      <div className="relative">
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+          className={`font-mono ${suffix ? "pr-14" : ""}`}
+        />
+        {suffix && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">{suffix}</span>}
+      </div>
     </Field>
   );
 }
