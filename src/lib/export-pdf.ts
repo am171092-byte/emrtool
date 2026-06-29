@@ -11,10 +11,11 @@ const LEFT = 10;           // 1 cm
 const RIGHT = 10;          // 1 cm
 const CONTENT_W = PAGE_W - LEFT - RIGHT;
 
-// Spacing tokens (mm). 1pt ≈ 0.353mm, 1px ≈ 0.265mm at 96dpi.
-const SECTION_GAP = 3.2;     // ~12px between sections
-const HEADER_PAD_BELOW = 1.6; // ~6px below header before content
-const INFO_GAP = 2.6;        // ~10px below patient info block
+// Spacing tokens (mm).
+const SECTION_GAP = 8;        // 8mm gap between sections
+const HEADER_PAD_BELOW = 2;   // below header before content
+const INFO_GAP = 4;           // below patient info block
+const MIN_SECTION_SPACE = 25; // require >=25mm before starting a new section
 const BODY_SIZE = 10;
 const HEADER_SIZE = 11;
 const FONT = "helvetica"; // clean sans-serif bundled with jsPDF
