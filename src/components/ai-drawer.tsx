@@ -227,8 +227,9 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               onKeyDown={(e) => { if (e.key === "Enter") void sendChat(); }}
               placeholder="Ask the assistant…"
               disabled={loading}
+              enterKeyHint="send"
             />
-            <Button onClick={() => void sendChat()} disabled={loading || !input.trim()} size="icon" aria-label="Send">
+            <Button onClick={() => void sendChat()} disabled={loading || !input.trim()} size="icon" className="h-10 w-10 shrink-0" aria-label="Send">
               <Send className="h-4 w-4" />
             </Button>
           </div>
