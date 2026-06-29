@@ -174,9 +174,24 @@ DAS28-CRP: ${scoreCrp?.toFixed(2) ?? "—"} → ${activityLabel(scoreCrp).label}
             <div className="flex justify-between"><span className="text-muted-foreground">DAS28-CRP</span><span className="font-mono">{scoreCrp?.toFixed(2) ?? "—"}</span></div>
           </div>
 
-          <Button onClick={copy} variant="outline" className="w-full" size="sm">
+          {onSave && (
+            <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" onClick={handleSave} className="w-full" size="sm">
+                  <Save className="h-4 w-4 mr-2" /> Save DAS28
+                </Button>
+                <Button type="button" onClick={handleReset} variant="outline" className="w-full" size="sm">
+                  <RotateCcw className="h-4 w-4 mr-2" /> Reset
+                </Button>
+              </div>
+              {savedAt && <div className="text-[11px] text-accent text-center">Saved — included on next visit save.</div>}
+            </div>
+          )}
+
+          <Button type="button" onClick={copy} variant="outline" className="w-full" size="sm">
             <Copy className="h-4 w-4 mr-2" /> Copy summary
           </Button>
+
 
           <details className="text-xs text-muted-foreground">
             <summary className="cursor-pointer">How is this calculated?</summary>
