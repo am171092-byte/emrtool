@@ -37,7 +37,7 @@ export interface Investigation {
   units?: string;
   referenceRange?: string;
   status?: "Normal" | "Abnormal" | "Critical";
-  urgency?: "Routine" | "Urgent";
+  urgency?: "Routine" | "Urgent" | "Follow up";
   notes?: string;
   date?: string;
 }
