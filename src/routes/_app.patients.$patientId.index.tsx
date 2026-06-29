@@ -20,6 +20,7 @@ import { DAS28Panel } from "@/components/das28-panel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { daysUntil } from "@/lib/format";
 import { ReportUploadDialog } from "@/components/report-upload-dialog";
+import { LabExtractDialog } from "@/components/lab-extract-dialog";
 import { createCalendarEvent } from "@/lib/calendar-service";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
@@ -392,6 +393,12 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
   const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edit, setEdit] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+  const [extractFile, setExtractFile] = useState<File | null>(null);
+  const onExtractFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) setExtractFile(f);
+    e.target.value = "";
+  };
 
   if (!patient) return null;
 
@@ -440,9 +447,14 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
 
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2 flex-wrap">
+        <label className="inline-flex items-center justify-center gap-1 h-9 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 text-sm font-medium cursor-pointer">
+          <Upload className="h-3 w-3" /> Upload & Extract Lab Report
+          <input type="file" className="hidden" accept="image/jpeg,image/png,image/jpg,application/pdf" onChange={onExtractFile} />
+        </label>
         <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add"}</Button>
       </div>
+      <LabExtractDialog patient={patient} file={extractFile} onClose={() => setExtractFile(null)} />
       {open && (
         <Card className="p-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
           <div><label className="text-xs text-muted-foreground">Date</label><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></div>
