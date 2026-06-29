@@ -74,11 +74,19 @@ export interface Visit {
   time: string;       // HH:MM
   chiefComplaint: string;
   soap: {
-    subjective: string;
-    objective: string;
-    assessment: string;
+    historyOfPresentingIllness: string;
+    currentVisit: string;
+    examination: string;
+    impression: string;
     plan: string;
+    /** @deprecated kept for backward compatibility with old records */
+    subjective?: string;
+    /** @deprecated */
+    objective?: string;
+    /** @deprecated */
+    assessment?: string;
   };
+  investigationNotes?: string;
   vitals?: Vitals;
   prescriptions: Prescription[];
   investigations: Investigation[];
