@@ -22,7 +22,7 @@ export function exportVisitPdf(p: Patient, v: Visit) {
   line(`Patient: ${p.fullName}  •  ${calcAge(p.dob)} y  •  ${p.sex}  •  ${p.phone}`, { bold: true });
   y += 2;
   line("Chief complaint", { bold: true, size: 11 });
-  line(v.chiefComplaint || "—");
+  line((v.chiefComplaints && v.chiefComplaints.length > 0 ? v.chiefComplaints.join(", ") : v.chiefComplaint) || "—");
   y += 2;
 
   line("History of Presenting Illness", { bold: true, size: 11 }); line(v.soap.historyOfPresentingIllness || v.soap.subjective || "—");
