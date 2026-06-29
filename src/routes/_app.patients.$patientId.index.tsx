@@ -20,6 +20,7 @@ import { DAS28Panel } from "@/components/das28-panel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { daysUntil } from "@/lib/format";
 import { ReportUploadDialog } from "@/components/report-upload-dialog";
+import { createCalendarEvent } from "@/lib/calendar-service";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
@@ -410,11 +411,21 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
   const [reason, setReason] = useState(patient.nextVisitReason ?? "");
   const due = daysUntil(patient.nextFollowUp);
 
-  const save = () => {
+  const save = async () => {
     if (!date) return;
-    upsertPatient({ ...patient, nextFollowUp: new Date(date).toISOString(), nextVisitReason: reason || undefined });
+    const iso = new Date(date).toISOString();
+    upsertPatient({ ...patient, nextFollowUp: iso, nextVisitReason: reason || undefined });
     toast.success("Next visit scheduled");
     setOpen(false);
+    const ok = await createCalendarEvent({
+      patientName: patient.fullName,
+      patientId: patient.id,
+      date: iso,
+      time: "",
+      duration: 30,
+      notes: reason,
+    });
+    if (ok) toast.success("Follow-up added to Google Calendar");
   };
   const clear = () => {
     upsertPatient({ ...patient, nextFollowUp: undefined, nextVisitReason: undefined });
