@@ -28,11 +28,14 @@ export function DAS28Calculator({
   initialSjc = 0,
   initialMarker = "ESR",
   onChange,
+  onSave,
 }: {
   initialTjc?: number;
   initialSjc?: number;
   initialMarker?: "ESR" | "CRP";
   onChange?: (snap: DAS28Snapshot) => void;
+  /** When provided, the calculator does NOT auto-emit changes; user must click "Save DAS28". */
+  onSave?: (snap: DAS28Snapshot | null) => void;
 }) {
   const [tjc, setTjc] = useState(initialTjc);
   const [sjc, setSjc] = useState(initialSjc);
@@ -40,6 +43,7 @@ export function DAS28Calculator({
   const [esr, setEsr] = useState<number | "">(20);
   const [crp, setCrp] = useState<number | "">(5);
   const [gh, setGh] = useState(30);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => { setTjc(initialTjc); }, [initialTjc]);
   useEffect(() => { setSjc(initialSjc); }, [initialSjc]);
@@ -50,17 +54,39 @@ export function DAS28Calculator({
   const primary = marker === "ESR" ? scoreEsr : scoreCrp;
   const activity = activityLabel(primary);
 
+  const buildSnap = (): DAS28Snapshot => ({
+    tjc, sjc, marker,
+    esr: typeof esr === "number" ? esr : undefined,
+    crp: typeof crp === "number" ? crp : undefined,
+    gh,
+    scoreEsr: scoreEsr ?? undefined,
+    scoreCrp: scoreCrp ?? undefined,
+    activity: activity.label,
+  });
+
+  // Legacy behavior: auto-emit changes. Disabled when onSave is provided.
   useEffect(() => {
-    onChange?.({
-      tjc, sjc, marker,
-      esr: typeof esr === "number" ? esr : undefined,
-      crp: typeof crp === "number" ? crp : undefined,
-      gh,
-      scoreEsr: scoreEsr ?? undefined,
-      scoreCrp: scoreCrp ?? undefined,
-      activity: activity.label,
-    });
-  }, [tjc, sjc, marker, esr, crp, gh, scoreEsr, scoreCrp, activity.label, onChange]);
+    if (onSave) return;
+    onChange?.(buildSnap());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tjc, sjc, marker, esr, crp, gh, scoreEsr, scoreCrp, activity.label]);
+
+  // Mark snapshot as dirty when inputs change after a save.
+  useEffect(() => { setSavedAt(null); }, [tjc, sjc, marker, esr, crp, gh]);
+
+  const handleSave = () => {
+    const snap = buildSnap();
+    onSave?.(snap);
+    setSavedAt(Date.now());
+    toast.success("DAS28 saved (will be stored with the visit)");
+  };
+  const handleReset = () => {
+    setTjc(initialTjc); setSjc(initialSjc); setMarker(initialMarker);
+    setEsr(20); setCrp(5); setGh(30);
+    onSave?.(null);
+    setSavedAt(null);
+  };
+
 
   const toneBg = {
     accent: "bg-accent text-accent-foreground",
