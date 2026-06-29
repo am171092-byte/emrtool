@@ -393,6 +393,12 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
   const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edit, setEdit] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+  const [extractFile, setExtractFile] = useState<File | null>(null);
+  const onExtractFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) setExtractFile(f);
+    e.target.value = "";
+  };
 
   if (!patient) return null;
 
