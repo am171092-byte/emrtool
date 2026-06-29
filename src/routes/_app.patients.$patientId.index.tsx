@@ -386,10 +386,14 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
 
 
 function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
-  if (!patient) return null;
   const [open, setOpen] = useState(false);
   const today = () => new Date().toISOString().slice(0, 10);
   const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [edit, setEdit] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+
+  if (!patient) return null;
+
   const add = () => {
     if (!draft.testName.trim()) return;
     const { date, ...rest } = draft;
@@ -398,6 +402,41 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
     setOpen(false);
     toast.success("Investigation added");
   };
+
+  const startEdit = (row: typeof patient.investigations[number]) => {
+    setEditingId(row.id);
+    setEdit({
+      testName: row.testName ?? "",
+      result: row.result ?? "",
+      units: row.units ?? "",
+      referenceRange: row.referenceRange ?? "",
+      status: (row.status ?? "Normal") as "Normal" | "Abnormal" | "Critical",
+      date: (row.date ?? new Date().toISOString()).slice(0, 10),
+    });
+  };
+  const saveEdit = () => {
+    if (!editingId) return;
+    upsertPatient({
+      ...patient,
+      investigations: patient.investigations.map((r) => r.id !== editingId ? r : {
+        ...r,
+        testName: edit.testName,
+        result: edit.result || undefined,
+        units: edit.units || undefined,
+        referenceRange: edit.referenceRange || undefined,
+        status: edit.status,
+        date: new Date(edit.date).toISOString(),
+      }),
+    });
+    setEditingId(null);
+    toast.success("Lab updated");
+  };
+  const removeRow = (id: string) => {
+    if (!confirm("Delete this lab entry?")) return;
+    upsertPatient({ ...patient, investigations: patient.investigations.filter((r) => r.id !== id) });
+    toast.success("Lab entry deleted");
+  };
+
   return (
     <>
       <div className="flex justify-end">
@@ -415,10 +454,24 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
       )}
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs text-muted-foreground bg-muted/30"><tr><th className="p-2">Date</th><th className="p-2">Test</th><th className="p-2">Result</th><th className="p-2">Units</th><th className="p-2">Ref</th><th className="p-2">Status</th></tr></thead>
+          <thead className="text-left text-xs text-muted-foreground bg-muted/30"><tr><th className="p-2">Date</th><th className="p-2">Test</th><th className="p-2">Result</th><th className="p-2">Units</th><th className="p-2">Ref</th><th className="p-2">Status</th><th className="p-2"></th></tr></thead>
           <tbody>
-            {patient.investigations.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground text-sm">No investigations yet.</td></tr>}
-            {patient.investigations.map((i) => (
+            {patient.investigations.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground text-sm">No investigations yet.</td></tr>}
+            {patient.investigations.map((i) => editingId === i.id ? (
+              <tr key={i.id} className="border-t bg-muted/30">
+                <td className="p-1"><Input type="date" className="h-8" value={edit.date} onChange={(e) => setEdit({ ...edit, date: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8" value={edit.testName} onChange={(e) => setEdit({ ...edit, testName: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8 font-mono" value={edit.result} onChange={(e) => setEdit({ ...edit, result: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8" value={edit.units} onChange={(e) => setEdit({ ...edit, units: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8" value={edit.referenceRange} onChange={(e) => setEdit({ ...edit, referenceRange: e.target.value })} /></td>
+                <td className="p-1">
+                  <select className="h-8 rounded-md border bg-background px-2 text-sm" value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value as "Normal" | "Abnormal" | "Critical" })}>
+                    <option>Normal</option><option>Abnormal</option><option>Critical</option>
+                  </select>
+                </td>
+                <td className="p-1"><div className="flex gap-1"><Button size="sm" onClick={saveEdit}>Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>×</Button></div></td>
+              </tr>
+            ) : (
               <tr key={i.id} className="border-t">
                 <td className="p-2 text-xs">{formatDate(i.date)}</td>
                 <td className="p-2">{i.testName}</td>
@@ -426,6 +479,7 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
                 <td className="p-2 text-xs">{i.units ?? "—"}</td>
                 <td className="p-2 text-xs">{i.referenceRange ?? "—"}</td>
                 <td className="p-2"><Badge variant="outline" className={i.status === "Normal" ? "border-accent text-accent" : i.status === "Critical" ? "border-destructive text-destructive" : "border-warning text-warning"}>{i.status ?? "—"}</Badge></td>
+                <td className="p-2"><div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(i)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeRow(i.id)}><Trash2 className="h-3 w-3" /></Button></div></td>
               </tr>
             ))}
           </tbody>
@@ -434,6 +488,7 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
     </>
   );
 }
+
 
 function AttachmentsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   if (!patient) return null;
