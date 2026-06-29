@@ -29,6 +29,7 @@ export function DAS28Calculator({
   initialMarker = "ESR",
   onChange,
   onSave,
+  onReset,
 }: {
   initialTjc?: number;
   initialSjc?: number;
@@ -36,6 +37,8 @@ export function DAS28Calculator({
   onChange?: (snap: DAS28Snapshot) => void;
   /** When provided, the calculator does NOT auto-emit changes; user must click "Save DAS28". */
   onSave?: (snap: DAS28Snapshot | null) => void;
+  /** Called when the user clicks Reset — parent should clear joint diagram selections. */
+  onReset?: () => void;
 }) {
   const [tjc, setTjc] = useState(initialTjc);
   const [sjc, setSjc] = useState(initialSjc);
@@ -43,13 +46,20 @@ export function DAS28Calculator({
   const [esr, setEsr] = useState<number | "">(20);
   const [crp, setCrp] = useState<number | "">(5);
   const [gh, setGh] = useState(30);
+  const [cleared, setCleared] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => { setTjc(initialTjc); }, [initialTjc]);
   useEffect(() => { setSjc(initialSjc); }, [initialSjc]);
 
-  const scoreEsr = useMemo(() => das28Esr({ tjc, sjc, esr: typeof esr === "number" ? esr : undefined, gh }), [tjc, sjc, esr, gh]);
-  const scoreCrp = useMemo(() => das28Crp({ tjc, sjc, crp: typeof crp === "number" ? crp : undefined, gh }), [tjc, sjc, crp, gh]);
+  const scoreEsr = useMemo(
+    () => (cleared ? null : das28Esr({ tjc, sjc, esr: typeof esr === "number" ? esr : undefined, gh })),
+    [tjc, sjc, esr, gh, cleared]
+  );
+  const scoreCrp = useMemo(
+    () => (cleared ? null : das28Crp({ tjc, sjc, crp: typeof crp === "number" ? crp : undefined, gh })),
+    [tjc, sjc, crp, gh, cleared]
+  );
 
   const primary = marker === "ESR" ? scoreEsr : scoreCrp;
   const activity = activityLabel(primary);
@@ -71,8 +81,8 @@ export function DAS28Calculator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tjc, sjc, marker, esr, crp, gh, scoreEsr, scoreCrp, activity.label]);
 
-  // Mark snapshot as dirty when inputs change after a save.
-  useEffect(() => { setSavedAt(null); }, [tjc, sjc, marker, esr, crp, gh]);
+  // Mark snapshot as dirty / un-cleared when inputs change.
+  useEffect(() => { setSavedAt(null); setCleared(false); }, [tjc, sjc, marker, esr, crp, gh]);
 
   const handleSave = () => {
     const snap = buildSnap();
@@ -81,10 +91,18 @@ export function DAS28Calculator({
     toast.success("DAS28 saved (will be stored with the visit)");
   };
   const handleReset = () => {
-    setTjc(initialTjc); setSjc(initialSjc); setMarker(initialMarker);
-    setEsr(20); setCrp(5); setGh(30);
+    setTjc(0);
+    setSjc(0);
+    setMarker(initialMarker);
+    setEsr("");
+    setCrp("");
+    setGh(0);
     onSave?.(null);
+    onReset?.();
     setSavedAt(null);
+    // Defer so the input-change effect (which unsets `cleared`) runs first.
+    setTimeout(() => setCleared(true), 0);
+    toast.success("DAS28 cleared");
   };
 
 
