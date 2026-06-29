@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { upsertVisit, uid, getVisitsForPatient } from "@/lib/api-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Sparkles, History, Pill } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { toast } from "sonner";
 import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
@@ -125,8 +128,45 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     onSaved();
   };
 
-  const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "" }]);
+  const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "", notes: "" }]);
   const addInv = () => setInvestigations([...investigations, { id: uid("inv"), testName: "", urgency: "Routine" }]);
+
+  const [carryOpen, setCarryOpen] = useState<null | "current" | "last">(null);
+  const carrySource = useMemo(() => {
+    if (carryOpen === "current") {
+      return (patient.medications ?? []).map((m) => ({
+        id: m.id, drug: m.drug, dose: m.dose, frequency: m.frequency, duration: m.duration,
+      }));
+    }
+    if (carryOpen === "last") {
+      const lv = getVisitsForPatient(patient.id).find((v) => v.id !== visit?.id);
+      return (lv?.prescriptions ?? []).map((p) => ({
+        id: p.id, drug: p.drug, dose: p.dose, frequency: p.frequency, duration: p.duration, notes: p.notes,
+      }));
+    }
+    return [];
+  }, [carryOpen, patient, visit?.id]);
+  const [carryPicked, setCarryPicked] = useState<Record<string, boolean>>({});
+  useEffect(() => { setCarryPicked({}); }, [carryOpen]);
+
+  const addCarry = () => {
+    const picks = carrySource.filter((s) => carryPicked[s.id]);
+    if (picks.length === 0) { setCarryOpen(null); return; }
+    setPrescriptions([
+      ...prescriptions,
+      ...picks.map((s) => ({
+        id: uid("rx"),
+        drug: s.drug || "",
+        dose: s.dose || "",
+        frequency: s.frequency || "",
+        duration: s.duration || "",
+        notes: (s as { notes?: string }).notes || "",
+      })),
+    ]);
+    setCarryOpen(null);
+  };
+
+
 
   return (
     <>
@@ -175,23 +215,33 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
             </Card>
 
             <Card className="p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="font-semibold">Prescriptions</h2>
-                <Button type="button" variant="outline" size="sm" onClick={addPx}><Plus className="h-3 w-3 mr-1" />Add</Button>
+                <div className="flex gap-2 flex-wrap">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setCarryOpen("current")}>
+                    <Pill className="h-3 w-3 mr-1" />From Current Meds
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setCarryOpen("last")}>
+                    <History className="h-3 w-3 mr-1" />From Last Visit
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={addPx}><Plus className="h-3 w-3 mr-1" />Add</Button>
+                </div>
               </div>
               <div className="space-y-2 mt-3">
                 {prescriptions.length === 0 && <div className="text-xs text-muted-foreground">None.</div>}
                 {prescriptions.map((rx, i) => (
                   <div key={rx.id} className="grid grid-cols-12 gap-1 items-center">
-                    <DrugAutocomplete className="col-span-12 md:col-span-4" value={rx.drug} onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, drug: v } : x))} />
+                    <DrugAutocomplete className="col-span-12 md:col-span-3" value={rx.drug} onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, drug: v } : x))} />
                     <Input className="col-span-4 md:col-span-2" placeholder="Dose" value={rx.dose} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, dose: e.target.value } : x))} />
                     <Input className="col-span-4 md:col-span-2" placeholder="Freq" value={rx.frequency} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, frequency: e.target.value } : x))} />
                     <Input className="col-span-3 md:col-span-2" placeholder="Duration" value={rx.duration} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, duration: e.target.value } : x))} />
+                    <Input className="col-span-11 md:col-span-2" placeholder="Notes (e.g. take with food)" value={rx.notes ?? ""} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, notes: e.target.value } : x))} />
                     <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setPrescriptions(prescriptions.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 ))}
               </div>
             </Card>
+
 
             <Card className="p-5">
               <div className="flex items-center justify-between">
@@ -254,7 +304,43 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         </div>
       </form>
       <AIDrawer open={aiOpen} onOpenChange={setAiOpen} patient={patient} />
+      <Dialog open={carryOpen !== null} onOpenChange={(o) => !o && setCarryOpen(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {carryOpen === "current" ? "Carry forward current medications" : "Carry forward from last visit"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-auto space-y-2">
+            {carrySource.length === 0 && (
+              <div className="text-sm text-muted-foreground py-4 text-center">
+                {carryOpen === "current" ? "No current medications on file." : "No prior visit with prescriptions found."}
+              </div>
+            )}
+            {carrySource.map((s) => (
+              <label key={s.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover:bg-muted/50">
+                <Checkbox
+                  checked={!!carryPicked[s.id]}
+                  onCheckedChange={(c) => setCarryPicked((p) => ({ ...p, [s.id]: !!c }))}
+                  className="mt-0.5"
+                />
+                <div className="text-sm flex-1">
+                  <div className="font-medium">{s.drug || "(unnamed)"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {[s.dose, s.frequency, s.duration].filter(Boolean).join(" · ") || "no details"}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setCarryOpen(null)}>Cancel</Button>
+            <Button type="button" onClick={addCarry} disabled={carrySource.length === 0}>Add selected</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 

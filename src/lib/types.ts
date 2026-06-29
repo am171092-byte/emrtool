@@ -29,8 +29,10 @@ export interface Prescription {
   dose: string;
   frequency: string;
   duration: string;
+  notes?: string;
   instructions?: string;
 }
+
 
 export interface Investigation {
   id: string;
