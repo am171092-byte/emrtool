@@ -108,6 +108,7 @@ export interface Patient {
   dob: string;        // ISO date
   sex: Sex;
   phone: string;
+  email?: string;
   address?: string;
   allergies: Allergy[];
   medications: Medication[];
@@ -118,6 +119,7 @@ export interface Patient {
   investigations: Investigation[];
   attachments: Attachment[];
   primaryDiagnosis?: string;
+  tdi?: string;
   createdAt: string;
   lastAccessedAt?: string;
   nextFollowUp?: string;
