@@ -12,7 +12,7 @@ import { usePatient, useVisitsForPatient } from "@/lib/use-store";
 import { upsertPatient, touchRecent, addAttachment, deleteAttachment, uid, deleteVisit } from "@/lib/api-store";
 import { calcAge, formatDate, formatDateTime } from "@/lib/format";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
-import { Pencil, Plus, Phone, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
+import { Pencil, Plus, Phone, Mail, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { exportVisitPdf } from "@/lib/export-pdf";
