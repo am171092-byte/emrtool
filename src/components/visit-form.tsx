@@ -164,12 +164,13 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
               <h2 className="font-semibold">Vitals</h2>
               <p className="text-xs text-muted-foreground">Pre-filled from last visit. Update as needed.</p>
               <div className="grid grid-cols-3 gap-2 text-xs">
-                <NumField label="BP Sys" value={bpS} onChange={setBpS} />
-                <NumField label="BP Dia" value={bpD} onChange={setBpD} />
-                <NumField label="HR" value={hr} onChange={setHr} />
-                <NumField label="Weight" value={weight} onChange={setWeight} />
-                <NumField label="Temp" value={temp} onChange={setTemp} />
-                <NumField label="SpO₂" value={spo2} onChange={setSpo2} />
+                <NumField label="BP Sys" suffix="mmHg" value={bpS} onChange={setBpS} />
+                <NumField label="BP Dia" suffix="mmHg" value={bpD} onChange={setBpD} />
+                <NumField label="HR" suffix="bpm" value={hr} onChange={setHr} />
+                <NumField label="Resp Rate" suffix="/min" value={respRate} onChange={setRespRate} />
+                <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
+                <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
+                <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
               </div>
             </Card>
 
