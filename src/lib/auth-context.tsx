@@ -22,13 +22,17 @@ const SESSION_TOKEN_KEY = "rheumcare_token";
 
 function getSessionToken(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(SESSION_TOKEN_KEY);
+  return localStorage.getItem(SESSION_TOKEN_KEY);
 }
 
 function setSessionToken(token: string | null) {
   if (typeof window === "undefined") return;
-  if (token) sessionStorage.setItem(SESSION_TOKEN_KEY, token);
-  else sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  if (token) {
+    localStorage.setItem(SESSION_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+    try { sessionStorage.removeItem(SESSION_TOKEN_KEY); } catch { /* ignore */ }
+  }
   inMemoryToken = token;
 }
 
