@@ -176,7 +176,7 @@ export function AppShell() {
       {/* Floating AI button on desktop */}
       <Button
         onClick={() => setAiOpen(true)}
-        className="hidden md:flex fixed bottom-6 right-6 z-30 rounded-full h-12 w-12 shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground"
+        className="fixed z-50 rounded-full h-12 w-12 shadow-lg bg-accent hover:bg-accent/90 text-accent-foreground bottom-20 right-4 md:bottom-6 md:right-6"
         size="icon"
         aria-label="Open AI Assistant"
       >
