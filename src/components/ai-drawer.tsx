@@ -118,6 +118,7 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-accent" />
@@ -167,6 +168,7 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               placeholder={placeholderFor(activeTask)}
               value={taskInput}
               onChange={(e) => setTaskInput(e.target.value)}
+              enterKeyHint="send"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && taskInput.trim()) {
                   void submitInputTask(activeTask, taskInput);
@@ -176,6 +178,20 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               }}
               autoFocus
             />
+            <Button
+              size="icon"
+              className="h-10 w-10 shrink-0"
+              disabled={!taskInput.trim() || loading}
+              onClick={() => {
+                if (!taskInput.trim()) return;
+                void submitInputTask(activeTask, taskInput);
+                setTaskInput("");
+                setActiveTask(null);
+              }}
+              aria-label="Submit"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
         )}
 
@@ -211,8 +227,9 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               onKeyDown={(e) => { if (e.key === "Enter") void sendChat(); }}
               placeholder="Ask the assistant…"
               disabled={loading}
+              enterKeyHint="send"
             />
-            <Button onClick={() => void sendChat()} disabled={loading || !input.trim()} size="icon" aria-label="Send">
+            <Button onClick={() => void sendChat()} disabled={loading || !input.trim()} size="icon" className="h-10 w-10 shrink-0" aria-label="Send">
               <Send className="h-4 w-4" />
             </Button>
           </div>
