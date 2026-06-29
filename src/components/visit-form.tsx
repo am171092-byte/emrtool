@@ -128,8 +128,45 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     onSaved();
   };
 
-  const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "" }]);
+  const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "", notes: "" }]);
   const addInv = () => setInvestigations([...investigations, { id: uid("inv"), testName: "", urgency: "Routine" }]);
+
+  const [carryOpen, setCarryOpen] = useState<null | "current" | "last">(null);
+  const carrySource = useMemo(() => {
+    if (carryOpen === "current") {
+      return (patient.medications ?? []).map((m) => ({
+        id: m.id, drug: m.drug, dose: m.dose, frequency: m.frequency, duration: m.duration,
+      }));
+    }
+    if (carryOpen === "last") {
+      const lv = getVisitsForPatient(patient.id).find((v) => v.id !== visit?.id);
+      return (lv?.prescriptions ?? []).map((p) => ({
+        id: p.id, drug: p.drug, dose: p.dose, frequency: p.frequency, duration: p.duration, notes: p.notes,
+      }));
+    }
+    return [];
+  }, [carryOpen, patient, visit?.id]);
+  const [carryPicked, setCarryPicked] = useState<Record<string, boolean>>({});
+  useEffect(() => { setCarryPicked({}); }, [carryOpen]);
+
+  const addCarry = () => {
+    const picks = carrySource.filter((s) => carryPicked[s.id]);
+    if (picks.length === 0) { setCarryOpen(null); return; }
+    setPrescriptions([
+      ...prescriptions,
+      ...picks.map((s) => ({
+        id: uid("rx"),
+        drug: s.drug || "",
+        dose: s.dose || "",
+        frequency: s.frequency || "",
+        duration: s.duration || "",
+        notes: (s as { notes?: string }).notes || "",
+      })),
+    ]);
+    setCarryOpen(null);
+  };
+
+
 
   return (
     <>
