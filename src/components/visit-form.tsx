@@ -296,7 +296,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 </div>
                 <JointDiagram states={jointStates} mode={jointMode} onChange={setJointStates} />
               </div>
-              <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onSave={setDas28Snap} />
+              <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onSave={setDas28Snap} onReset={() => setJointStates({})} />
             </div>
           )}
         </Card>
