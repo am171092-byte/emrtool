@@ -12,7 +12,7 @@ import { usePatient, useVisitsForPatient } from "@/lib/use-store";
 import { upsertPatient, touchRecent, addAttachment, deleteAttachment, uid, deleteVisit } from "@/lib/api-store";
 import { calcAge, formatDate, formatDateTime } from "@/lib/format";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
-import { Pencil, Plus, Phone, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
+import { Pencil, Plus, Phone, Mail, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { exportVisitPdf } from "@/lib/export-pdf";
@@ -54,12 +54,21 @@ function PatientRecord() {
                 <div className="font-semibold text-lg leading-tight truncate">{p.fullName}</div>
                 <div className="text-xs text-muted-foreground">{calcAge(p.dob)} y · {p.sex}</div>
                 <div className="text-xs text-muted-foreground">DOB {formatDate(p.dob)}</div>
-                <a href={`tel:${p.phone}`} className="mt-2 inline-flex items-center gap-1 text-xs text-primary"><Phone className="h-3 w-3" />{p.phone}</a>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1 text-xs text-primary"><Phone className="h-3 w-3" />{p.phone}</a>
+                  {p.email && <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1 text-xs text-primary truncate max-w-[180px]"><Mail className="h-3 w-3 shrink-0" />{p.email}</a>}
+                </div>
                 {p.address && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.address}</div>}
               </div>
               <Button variant="ghost" size="icon" onClick={() => nav({ to: "/patients/$patientId/edit", params: { patientId } })} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
             </div>
             {p.primaryDiagnosis && <Badge className="mt-3" variant="secondary">{p.primaryDiagnosis}</Badge>}
+            {p.tdi && (
+              <div className="mt-2 rounded-md bg-primary/5 border border-primary/15 px-3 py-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total Duration of Illness</div>
+                <div className="text-sm font-medium">{p.tdi}</div>
+              </div>
+            )}
           </Card>
 
           <NextVisitCard patient={p} />
@@ -107,8 +116,8 @@ function PatientRecord() {
               <TagInput value={p.comorbidities} onChange={(v) => updateP({ comorbidities: v })} placeholder="Add comorbidity" />
             </EditableSection>
 
-            <EditableSection title="Problem list">
-              <TagInput value={p.problemList} onChange={(v) => updateP({ problemList: v })} placeholder="Add problem" />
+            <EditableSection title="Current issues">
+              <TagInput value={p.problemList} onChange={(v) => updateP({ problemList: v })} placeholder="Add issue" />
             </EditableSection>
           </Card>
         </aside>

@@ -61,14 +61,14 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
     }
     if (task === "differential") {
       if (problems.length === 0) {
-        toast.error("Please add symptoms or a problem list first");
+        toast.error("Please add symptoms or current issues first");
         return null;
       }
       return { problemList: problems, medications: meds, comorbidities };
     }
     if (task === "similar_cases") {
       if (problems.length === 0) {
-        toast.error("Please add a problem list first");
+        toast.error("Please add current issues first");
         return null;
       }
       return { problemList: problems, medications: meds };
