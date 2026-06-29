@@ -154,14 +154,15 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
         <Card className="p-5 space-y-4">
           <h2 className="font-semibold">Initial vitals <span className="text-xs font-normal text-muted-foreground">(optional)</span></h2>
           <div className="grid gap-3 md:grid-cols-3">
-            <NumField label="BP Systolic (mmHg)" value={bpS} onChange={setBpS} />
-            <NumField label="BP Diastolic (mmHg)" value={bpD} onChange={setBpD} />
-            <NumField label="Heart rate (bpm)" value={hr} onChange={setHr} />
-            <NumField label="Weight (kg)" value={weight} onChange={setWeight} />
-            <NumField label="Height (cm)" value={height} onChange={setHeight} />
+            <NumField label="BP Systolic" suffix="mmHg" value={bpS} onChange={setBpS} />
+            <NumField label="BP Diastolic" suffix="mmHg" value={bpD} onChange={setBpD} />
+            <NumField label="Heart rate" suffix="bpm" value={hr} onChange={setHr} />
+            <NumField label="Respiratory rate" suffix="/min" value={respRate} onChange={setRespRate} />
+            <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
+            <NumField label="Height" suffix="cm" value={height} onChange={setHeight} />
             <Field label="BMI"><Input value={calcBmi ?? ""} readOnly className="font-mono" /></Field>
-            <NumField label="Temperature (°C)" value={temp} onChange={setTemp} />
-            <NumField label="SpO2 (%)" value={spo2} onChange={setSpo2} />
+            <NumField label="Temperature" suffix="°F" value={temp} onChange={setTemp} />
+            <NumField label="SpO2" suffix="%" value={spo2} onChange={setSpo2} />
           </div>
         </Card>
       )}
