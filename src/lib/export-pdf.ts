@@ -56,14 +56,18 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
 
   const sectionTitle = (label: string) => {
     if (!firstSection) y += SECTION_GAP;
+    // Keep header with at least some content: require min space available.
+    const remaining = PAGE_H - BOTTOM_MARGIN - y;
+    if (remaining < MIN_SECTION_SPACE) {
+      doc.addPage();
+      y = TOP_MARGIN;
+    }
     firstSection = false;
-    ensureSpace(8);
     doc.setFont(FONT, "bold");
     doc.setFontSize(HEADER_SIZE);
     doc.setTextColor(20);
     doc.text(label, LEFT, y);
     y += HEADER_SIZE * 0.42 + 0.6;
-    // thin gray bottom border
     doc.setDrawColor(190);
     doc.setLineWidth(0.18);
     doc.line(LEFT, y, PAGE_W - RIGHT, y);
