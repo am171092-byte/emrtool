@@ -332,11 +332,13 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
 function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   if (!patient) return null;
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical" });
+  const today = () => new Date().toISOString().slice(0, 10);
+  const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
   const add = () => {
     if (!draft.testName.trim()) return;
-    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date().toISOString(), ...draft }, ...patient.investigations] });
-    setDraft({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" });
+    const { date, ...rest } = draft;
+    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date(date).toISOString(), ...rest }, ...patient.investigations] });
+    setDraft({ testName: "", result: "", units: "", referenceRange: "", status: "Normal", date: today() });
     setOpen(false);
     toast.success("Investigation added");
   };
@@ -346,7 +348,8 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
         <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add"}</Button>
       </div>
       {open && (
-        <Card className="p-3 grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+        <Card className="p-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
+          <div><label className="text-xs text-muted-foreground">Date</label><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></div>
           <div className="col-span-2"><label className="text-xs text-muted-foreground">Test</label><Input value={draft.testName} onChange={(e) => setDraft({ ...draft, testName: e.target.value })} /></div>
           <div><label className="text-xs text-muted-foreground">Result</label><Input value={draft.result} onChange={(e) => setDraft({ ...draft, result: e.target.value })} /></div>
           <div><label className="text-xs text-muted-foreground">Units</label><Input value={draft.units} onChange={(e) => setDraft({ ...draft, units: e.target.value })} /></div>
