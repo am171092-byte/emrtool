@@ -214,7 +214,8 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           )}
         </Card>
 
-        <div className="fixed bottom-0 inset-x-0 bg-card border-t p-3 flex gap-2 z-30 no-print">
+        <div className="h-20 md:hidden" aria-hidden />
+        <div className="fixed bottom-14 inset-x-0 md:bottom-0 bg-card border-t p-3 flex gap-2 z-30 no-print shadow-[0_-2px_8px_rgba(0,0,0,0.05)] md:shadow-none">
           <Button type="button" variant="outline" onClick={onCancel} className="flex-1 md:flex-none">Cancel</Button>
           <Button type="submit" className="flex-1 md:flex-none">Save visit</Button>
         </div>
