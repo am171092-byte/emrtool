@@ -35,9 +35,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [date, setDate] = useState(visit?.date.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
   const [cc, setCc] = useState(visit?.chiefComplaint ?? "");
-  const [subjective, setSubjective] = useState(visit?.soap.subjective ?? "");
-  const [objective, setObjective] = useState(visit?.soap.objective ?? "");
-  const [assessment, setAssessment] = useState(visit?.soap.assessment ?? "");
+  const [hpi, setHpi] = useState(visit?.soap.historyOfPresentingIllness ?? visit?.soap.subjective ?? "");
+  const [currentVisit, setCurrentVisit] = useState(visit?.soap.currentVisit ?? "");
+  const [examination, setExamination] = useState(visit?.soap.examination ?? visit?.soap.objective ?? "");
+  const [impression, setImpression] = useState(visit?.soap.impression ?? visit?.soap.assessment ?? "");
   const [plan, setPlan] = useState(visit?.soap.plan ?? "");
 
   const prefVitals = visit?.vitals ?? lastVisit?.vitals ?? patient.vitals?.[0];
@@ -50,6 +51,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(visit?.prescriptions ?? []);
   const [investigations, setInvestigations] = useState<Investigation[]>(visit?.investigations ?? []);
+  const [investigationNotes, setInvestigationNotes] = useState(visit?.investigationNotes ?? "");
   const [nextFollowUp, setNextFollowUp] = useState(visit?.nextFollowUp?.slice(0, 10) ?? "");
   const [followUpNote, setFollowUpNote] = useState(visit?.followUpNote ?? "");
 
