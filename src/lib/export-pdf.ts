@@ -64,7 +64,7 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
-  const sub = `${calcAge(p.dob)} y · ${p.sex}${p.phone ? " · " + p.phone : ""}`;
+  const sub = `${calcAge(p.dob)} y · ${p.sex}`;
   doc.text(sub, LEFT, y);
   y += 4;
 
