@@ -280,17 +280,18 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
       <Card className="p-3 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">Date</th><th className="p-2">BP</th><th className="p-2">HR</th><th className="p-2">Wt</th><th className="p-2">Ht</th><th className="p-2">BMI</th><th className="p-2">Temp</th><th className="p-2">SpO₂</th></tr>
+            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th></tr>
           </thead>
           <tbody>
             <tr className="border-t">
               <td className="p-1 text-xs text-muted-foreground">Add new</td>
               <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={bpS} onChange={(e) => setBpS(e.target.value === "" ? "" : Number(e.target.value))} placeholder="120" /><span className="self-center">/</span><Input className="h-8 w-14 font-mono" type="number" value={bpD} onChange={(e) => setBpD(e.target.value === "" ? "" : Number(e.target.value))} placeholder="80" /></div></td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={hr} onChange={(e) => setHr(e.target.value === "" ? "" : Number(e.target.value))} /></td>
+              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={respRate} onChange={(e) => setRespRate(e.target.value === "" ? "" : Number(e.target.value))} /></td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={weight} onChange={(e) => setWeight(e.target.value === "" ? "" : Number(e.target.value))} /></td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={height} onChange={(e) => setHeight(e.target.value === "" ? "" : Number(e.target.value))} /></td>
               <td className="p-1 font-mono text-xs">—</td>
-              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} /></td>
+              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} placeholder="98.6" /></td>
               <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={spo2} onChange={(e) => setSpo2(e.target.value === "" ? "" : Number(e.target.value))} /><Button size="sm" onClick={add}>Add</Button></div></td>
             </tr>
             {v.map((row) => (
@@ -298,6 +299,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 text-xs">{formatDate(row.date)}</td>
                 <td className="p-2 font-mono">{row.bpSystolic ?? "—"}/{row.bpDiastolic ?? "—"}</td>
                 <td className="p-2 font-mono">{row.hr ?? "—"}</td>
+                <td className="p-2 font-mono">{row.respiratoryRate ?? "—"}</td>
                 <td className="p-2 font-mono">{row.weight ?? "—"}</td>
                 <td className="p-2 font-mono">{row.height ?? "—"}</td>
                 <td className="p-2 font-mono">{row.weight && row.height ? (row.weight / ((row.height / 100) ** 2)).toFixed(1) : "—"}</td>
