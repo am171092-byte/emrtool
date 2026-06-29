@@ -167,6 +167,7 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               placeholder={placeholderFor(activeTask)}
               value={taskInput}
               onChange={(e) => setTaskInput(e.target.value)}
+              enterKeyHint="send"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && taskInput.trim()) {
                   void submitInputTask(activeTask, taskInput);
@@ -176,6 +177,20 @@ export function AIDrawer({ open, onOpenChange, patient }: Props) {
               }}
               autoFocus
             />
+            <Button
+              size="icon"
+              className="h-10 w-10 shrink-0"
+              disabled={!taskInput.trim() || loading}
+              onClick={() => {
+                if (!taskInput.trim()) return;
+                void submitInputTask(activeTask, taskInput);
+                setTaskInput("");
+                setActiveTask(null);
+              }}
+              aria-label="Submit"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
         )}
 
