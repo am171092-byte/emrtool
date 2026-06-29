@@ -114,6 +114,7 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
             </div>
           </Field>
           <Field label="Phone" required><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
+          <Field label="Email"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="patient@example.com" /></Field>
           <Field label="Address" className="md:col-span-2"><Textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)} /></Field>
         </div>
       </Card>
@@ -121,9 +122,10 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
       <Card className="p-5 space-y-4">
         <h2 className="font-semibold">Clinical details</h2>
         <Field label="Primary diagnosis"><Input value={primaryDx} onChange={(e) => setPrimaryDx(e.target.value)} placeholder="e.g. Rheumatoid Arthritis" /></Field>
+        <Field label="Total Duration of Illness (TDI)"><Input value={tdi} onChange={(e) => setTdi(e.target.value)} placeholder="e.g. 3 years, 18 months" /></Field>
         <Field label="Allergies"><TagInput value={allergies} onChange={setAllergies} placeholder="Type allergy, press Enter" tone="danger" /></Field>
         <Field label="Comorbidities"><TagInput value={comorbidities} onChange={setComorbidities} placeholder="e.g. Hypertension" /></Field>
-        <Field label="Problem list"><TagInput value={problems} onChange={setProblems} placeholder="Add problem, press Enter" /></Field>
+        <Field label="Current issues"><TagInput value={problems} onChange={setProblems} placeholder="Add issue, press Enter" /></Field>
         <Field label="Past medical history"><Textarea rows={3} value={pmh} onChange={(e) => setPmh(e.target.value)} /></Field>
 
         <div>
