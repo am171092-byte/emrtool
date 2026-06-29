@@ -15,7 +15,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
 import { Pencil, Plus, Phone, Mail, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
-import { exportVisitPdf } from "@/lib/export-pdf";
+import { exportVisitPdf, printVisitPdf } from "@/lib/export-pdf";
 import { DAS28Panel } from "@/components/das28-panel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { daysUntil } from "@/lib/format";
