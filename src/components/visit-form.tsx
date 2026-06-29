@@ -76,7 +76,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
     setDirty(true);
-  }, [cc, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap]);
+  }, [chiefComplaints, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap]);
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -86,14 +86,15 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cc.trim()) { toast.error("Chief complaint is required"); return; }
+    if (chiefComplaints.length === 0) { toast.error("At least one chief complaint is required"); return; }
     const id = visit?.id ?? uid("vis");
     const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
     const next: Visit = {
       id, patientId: patient.id,
       date: new Date(date).toISOString(),
       time,
-      chiefComplaint: cc,
+      chiefComplaints,
+      chiefComplaint: chiefComplaints.join(", "),
       soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
       vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
       prescriptions,
