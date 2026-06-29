@@ -261,8 +261,15 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return <div className={className}><Label className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</Label>{children}</div>;
 }
-function NumField({ label, value, onChange }: { label: string; value: number | ""; onChange: (v: number | "") => void }) {
-  return <Field label={label}><Input type="number" value={value} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} className="font-mono h-9" /></Field>;
+function NumField({ label, value, onChange, suffix }: { label: string; value: number | ""; onChange: (v: number | "") => void; suffix?: string }) {
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <Input type="number" value={value} onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))} className={`font-mono h-9 ${suffix ? "pr-12" : ""}`} />
+        {suffix && <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[10px] text-muted-foreground">{suffix}</span>}
+      </div>
+    </Field>
+  );
 }
 function SoapField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
