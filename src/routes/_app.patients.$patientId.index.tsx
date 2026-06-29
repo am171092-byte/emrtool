@@ -116,8 +116,8 @@ function PatientRecord() {
               <TagInput value={p.comorbidities} onChange={(v) => updateP({ comorbidities: v })} placeholder="Add comorbidity" />
             </EditableSection>
 
-            <EditableSection title="Problem list">
-              <TagInput value={p.problemList} onChange={(v) => updateP({ problemList: v })} placeholder="Add problem" />
+            <EditableSection title="Current issues">
+              <TagInput value={p.problemList} onChange={(v) => updateP({ problemList: v })} placeholder="Add issue" />
             </EditableSection>
           </Card>
         </aside>
