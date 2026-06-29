@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { upsertVisit, uid, getVisitsForPatient } from "@/lib/api-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Sparkles, History, Pill } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { toast } from "sonner";
 import { JointDiagram, type Mode } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
