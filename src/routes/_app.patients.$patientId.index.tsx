@@ -15,7 +15,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
 import { Pencil, Plus, Phone, Mail, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
-import { exportVisitPdf } from "@/lib/export-pdf";
+import { exportVisitPdf, printVisitPdf } from "@/lib/export-pdf";
 import { DAS28Panel } from "@/components/das28-panel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { daysUntil } from "@/lib/format";
@@ -154,8 +154,9 @@ function PatientRecord() {
                       </div>
                       <div className="flex gap-1 no-print">
                         <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); nav({ to: "/patients/$patientId/visits/$visitId/edit", params: { patientId, visitId: v.id } }); }}>Edit</Button>
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); window.print(); }}><Printer className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); printVisitPdf(p, v); }}><Printer className="h-3 w-3" /></Button>
                         <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); exportVisitPdf(p, v); }}><FileDown className="h-3 w-3" /></Button>
+
                         <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.preventDefault(); if (confirm("Delete this visit?")) { deleteVisit(v.id); toast.success("Visit deleted"); } }}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </summary>
