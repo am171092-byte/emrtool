@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, Copy } from "lucide-react";
+import { Minus, Plus, Copy, Save, RotateCcw } from "lucide-react";
 import { das28Esr, das28Crp, activityLabel } from "@/lib/das28";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,11 +28,14 @@ export function DAS28Calculator({
   initialSjc = 0,
   initialMarker = "ESR",
   onChange,
+  onSave,
 }: {
   initialTjc?: number;
   initialSjc?: number;
   initialMarker?: "ESR" | "CRP";
   onChange?: (snap: DAS28Snapshot) => void;
+  /** When provided, the calculator does NOT auto-emit changes; user must click "Save DAS28". */
+  onSave?: (snap: DAS28Snapshot | null) => void;
 }) {
   const [tjc, setTjc] = useState(initialTjc);
   const [sjc, setSjc] = useState(initialSjc);
@@ -40,6 +43,7 @@ export function DAS28Calculator({
   const [esr, setEsr] = useState<number | "">(20);
   const [crp, setCrp] = useState<number | "">(5);
   const [gh, setGh] = useState(30);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => { setTjc(initialTjc); }, [initialTjc]);
   useEffect(() => { setSjc(initialSjc); }, [initialSjc]);
@@ -50,17 +54,39 @@ export function DAS28Calculator({
   const primary = marker === "ESR" ? scoreEsr : scoreCrp;
   const activity = activityLabel(primary);
 
+  const buildSnap = (): DAS28Snapshot => ({
+    tjc, sjc, marker,
+    esr: typeof esr === "number" ? esr : undefined,
+    crp: typeof crp === "number" ? crp : undefined,
+    gh,
+    scoreEsr: scoreEsr ?? undefined,
+    scoreCrp: scoreCrp ?? undefined,
+    activity: activity.label,
+  });
+
+  // Legacy behavior: auto-emit changes. Disabled when onSave is provided.
   useEffect(() => {
-    onChange?.({
-      tjc, sjc, marker,
-      esr: typeof esr === "number" ? esr : undefined,
-      crp: typeof crp === "number" ? crp : undefined,
-      gh,
-      scoreEsr: scoreEsr ?? undefined,
-      scoreCrp: scoreCrp ?? undefined,
-      activity: activity.label,
-    });
-  }, [tjc, sjc, marker, esr, crp, gh, scoreEsr, scoreCrp, activity.label, onChange]);
+    if (onSave) return;
+    onChange?.(buildSnap());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tjc, sjc, marker, esr, crp, gh, scoreEsr, scoreCrp, activity.label]);
+
+  // Mark snapshot as dirty when inputs change after a save.
+  useEffect(() => { setSavedAt(null); }, [tjc, sjc, marker, esr, crp, gh]);
+
+  const handleSave = () => {
+    const snap = buildSnap();
+    onSave?.(snap);
+    setSavedAt(Date.now());
+    toast.success("DAS28 saved (will be stored with the visit)");
+  };
+  const handleReset = () => {
+    setTjc(initialTjc); setSjc(initialSjc); setMarker(initialMarker);
+    setEsr(20); setCrp(5); setGh(30);
+    onSave?.(null);
+    setSavedAt(null);
+  };
+
 
   const toneBg = {
     accent: "bg-accent text-accent-foreground",
@@ -148,9 +174,24 @@ DAS28-CRP: ${scoreCrp?.toFixed(2) ?? "—"} → ${activityLabel(scoreCrp).label}
             <div className="flex justify-between"><span className="text-muted-foreground">DAS28-CRP</span><span className="font-mono">{scoreCrp?.toFixed(2) ?? "—"}</span></div>
           </div>
 
-          <Button onClick={copy} variant="outline" className="w-full" size="sm">
+          {onSave && (
+            <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" onClick={handleSave} className="w-full" size="sm">
+                  <Save className="h-4 w-4 mr-2" /> Save DAS28
+                </Button>
+                <Button type="button" onClick={handleReset} variant="outline" className="w-full" size="sm">
+                  <RotateCcw className="h-4 w-4 mr-2" /> Reset
+                </Button>
+              </div>
+              {savedAt && <div className="text-[11px] text-accent text-center">Saved — included on next visit save.</div>}
+            </div>
+          )}
+
+          <Button type="button" onClick={copy} variant="outline" className="w-full" size="sm">
             <Copy className="h-4 w-4 mr-2" /> Copy summary
           </Button>
+
 
           <details className="text-xs text-muted-foreground">
             <summary className="cursor-pointer">How is this calculated?</summary>

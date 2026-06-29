@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { upsertVisit, uid, getVisitsForPatient } from "@/lib/api-store";
+import { upsertVisit, upsertPatient, uid, getVisitsForPatient } from "@/lib/api-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
 import { Plus, Trash2, Sparkles, History, Pill } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -111,8 +111,12 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
     };
     upsertVisit(next);
+    if (nextFollowUpIso) {
+      upsertPatient({ ...patient, nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined });
+    }
     setDirty(false);
     toast.success("Visit saved");
+
     const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
     if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
       const ok = await createCalendarEvent({
@@ -292,7 +296,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 </div>
                 <JointDiagram states={jointStates} mode={jointMode} onChange={setJointStates} />
               </div>
-              <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onChange={setDas28Snap} />
+              <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onSave={setDas28Snap} />
             </div>
           )}
         </Card>

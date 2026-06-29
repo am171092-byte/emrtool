@@ -236,8 +236,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
-  if (!patient) return null;
-  const v = patient.vitals ?? [];
+  const v = patient?.vitals ?? [];
   const [bpS, setBpS] = useState<number | "">("");
   const [bpD, setBpD] = useState<number | "">("");
   const [hr, setHr] = useState<number | "">("");
@@ -246,6 +245,10 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
   const [respRate, setRespRate] = useState<number | "">("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [edit, setEdit] = useState<{ bpS: number | ""; bpD: number | ""; hr: number | ""; resp: number | ""; weight: number | ""; height: number | ""; temp: number | ""; spo2: number | "" }>({ bpS: "", bpD: "", hr: "", resp: "", weight: "", height: "", temp: "", spo2: "" });
+
+  if (!patient) return null;
 
   const add = () => {
     if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate) return;
@@ -269,32 +272,83 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
     toast.success("Vitals added");
   };
 
+  const startEdit = (row: typeof v[number]) => {
+    setEditingId(row.id);
+    setEdit({
+      bpS: row.bpSystolic ?? "", bpD: row.bpDiastolic ?? "", hr: row.hr ?? "",
+      resp: row.respiratoryRate ?? "", weight: row.weight ?? "", height: row.height ?? "",
+      temp: row.temperature ?? "", spo2: row.spo2 ?? "",
+    });
+  };
+  const saveEdit = () => {
+    if (!editingId) return;
+    upsertPatient({
+      ...patient,
+      vitals: v.map((row) => row.id !== editingId ? row : {
+        ...row,
+        bpSystolic: typeof edit.bpS === "number" ? edit.bpS : undefined,
+        bpDiastolic: typeof edit.bpD === "number" ? edit.bpD : undefined,
+        hr: typeof edit.hr === "number" ? edit.hr : undefined,
+        respiratoryRate: typeof edit.resp === "number" ? edit.resp : undefined,
+        weight: typeof edit.weight === "number" ? edit.weight : undefined,
+        height: typeof edit.height === "number" ? edit.height : undefined,
+        temperature: typeof edit.temp === "number" ? edit.temp : undefined,
+        spo2: typeof edit.spo2 === "number" ? edit.spo2 : undefined,
+      }),
+    });
+    setEditingId(null);
+    toast.success("Vitals updated");
+  };
+  const removeRow = (id: string) => {
+    if (!confirm("Delete this vitals entry?")) return;
+    upsertPatient({ ...patient, vitals: v.filter((r) => r.id !== id) });
+    toast.success("Vitals entry deleted");
+  };
+
   const chartData = [...v].reverse().map((row) => ({
     date: formatDate(row.date),
     BP: row.bpSystolic,
     Weight: row.weight,
   }));
 
+  const numCell = (val: number | "", set: (n: number | "") => void, w = "w-16") => (
+    <Input className={`h-8 ${w} font-mono`} type="number" value={val} onChange={(e) => set(e.target.value === "" ? "" : Number(e.target.value))} />
+  );
+
   return (
     <>
       <Card className="p-3 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th></tr>
+            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th><th className="p-2"></th></tr>
           </thead>
           <tbody>
             <tr className="border-t">
               <td className="p-1 text-xs text-muted-foreground">Add new</td>
               <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={bpS} onChange={(e) => setBpS(e.target.value === "" ? "" : Number(e.target.value))} placeholder="120" /><span className="self-center">/</span><Input className="h-8 w-14 font-mono" type="number" value={bpD} onChange={(e) => setBpD(e.target.value === "" ? "" : Number(e.target.value))} placeholder="80" /></div></td>
-              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={hr} onChange={(e) => setHr(e.target.value === "" ? "" : Number(e.target.value))} /></td>
-              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={respRate} onChange={(e) => setRespRate(e.target.value === "" ? "" : Number(e.target.value))} /></td>
-              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={weight} onChange={(e) => setWeight(e.target.value === "" ? "" : Number(e.target.value))} /></td>
-              <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={height} onChange={(e) => setHeight(e.target.value === "" ? "" : Number(e.target.value))} /></td>
+              <td className="p-1">{numCell(hr, setHr)}</td>
+              <td className="p-1">{numCell(respRate, setRespRate)}</td>
+              <td className="p-1">{numCell(weight, setWeight)}</td>
+              <td className="p-1">{numCell(height, setHeight)}</td>
               <td className="p-1 font-mono text-xs">—</td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} placeholder="98.6" /></td>
-              <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={spo2} onChange={(e) => setSpo2(e.target.value === "" ? "" : Number(e.target.value))} /><Button size="sm" onClick={add}>Add</Button></div></td>
+              <td className="p-1">{numCell(spo2, setSpo2, "w-14")}</td>
+              <td className="p-1"><Button size="sm" onClick={add}>Add</Button></td>
             </tr>
-            {v.map((row) => (
+            {v.map((row) => editingId === row.id ? (
+              <tr key={row.id} className="border-t bg-muted/30">
+                <td className="p-2 text-xs">{formatDate(row.date)}</td>
+                <td className="p-1"><div className="flex gap-1"><Input className="h-8 w-14 font-mono" type="number" value={edit.bpS} onChange={(e) => setEdit({ ...edit, bpS: e.target.value === "" ? "" : Number(e.target.value) })} /><span className="self-center">/</span><Input className="h-8 w-14 font-mono" type="number" value={edit.bpD} onChange={(e) => setEdit({ ...edit, bpD: e.target.value === "" ? "" : Number(e.target.value) })} /></div></td>
+                <td className="p-1">{numCell(edit.hr, (n) => setEdit({ ...edit, hr: n }))}</td>
+                <td className="p-1">{numCell(edit.resp, (n) => setEdit({ ...edit, resp: n }))}</td>
+                <td className="p-1">{numCell(edit.weight, (n) => setEdit({ ...edit, weight: n }))}</td>
+                <td className="p-1">{numCell(edit.height, (n) => setEdit({ ...edit, height: n }))}</td>
+                <td className="p-2 font-mono text-xs">—</td>
+                <td className="p-1">{numCell(edit.temp, (n) => setEdit({ ...edit, temp: n }))}</td>
+                <td className="p-1">{numCell(edit.spo2, (n) => setEdit({ ...edit, spo2: n }), "w-14")}</td>
+                <td className="p-1"><div className="flex gap-1"><Button size="sm" onClick={saveEdit}>Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>×</Button></div></td>
+              </tr>
+            ) : (
               <tr key={row.id} className="border-t">
                 <td className="p-2 text-xs">{formatDate(row.date)}</td>
                 <td className="p-2 font-mono">{row.bpSystolic ?? "—"}/{row.bpDiastolic ?? "—"}</td>
@@ -305,6 +359,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 font-mono">{row.weight && row.height ? (row.weight / ((row.height / 100) ** 2)).toFixed(1) : "—"}</td>
                 <td className="p-2 font-mono">{row.temperature ?? "—"}</td>
                 <td className="p-2 font-mono">{row.spo2 ?? "—"}</td>
+                <td className="p-2"><div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(row)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeRow(row.id)}><Trash2 className="h-3 w-3" /></Button></div></td>
               </tr>
             ))}
           </tbody>
@@ -329,11 +384,16 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
   );
 }
 
+
 function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
-  if (!patient) return null;
   const [open, setOpen] = useState(false);
   const today = () => new Date().toISOString().slice(0, 10);
   const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [edit, setEdit] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+
+  if (!patient) return null;
+
   const add = () => {
     if (!draft.testName.trim()) return;
     const { date, ...rest } = draft;
@@ -342,6 +402,41 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
     setOpen(false);
     toast.success("Investigation added");
   };
+
+  const startEdit = (row: typeof patient.investigations[number]) => {
+    setEditingId(row.id);
+    setEdit({
+      testName: row.testName ?? "",
+      result: row.result ?? "",
+      units: row.units ?? "",
+      referenceRange: row.referenceRange ?? "",
+      status: (row.status ?? "Normal") as "Normal" | "Abnormal" | "Critical",
+      date: (row.date ?? new Date().toISOString()).slice(0, 10),
+    });
+  };
+  const saveEdit = () => {
+    if (!editingId) return;
+    upsertPatient({
+      ...patient,
+      investigations: patient.investigations.map((r) => r.id !== editingId ? r : {
+        ...r,
+        testName: edit.testName,
+        result: edit.result || undefined,
+        units: edit.units || undefined,
+        referenceRange: edit.referenceRange || undefined,
+        status: edit.status,
+        date: new Date(edit.date).toISOString(),
+      }),
+    });
+    setEditingId(null);
+    toast.success("Lab updated");
+  };
+  const removeRow = (id: string) => {
+    if (!confirm("Delete this lab entry?")) return;
+    upsertPatient({ ...patient, investigations: patient.investigations.filter((r) => r.id !== id) });
+    toast.success("Lab entry deleted");
+  };
+
   return (
     <>
       <div className="flex justify-end">
@@ -359,10 +454,24 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
       )}
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="text-left text-xs text-muted-foreground bg-muted/30"><tr><th className="p-2">Date</th><th className="p-2">Test</th><th className="p-2">Result</th><th className="p-2">Units</th><th className="p-2">Ref</th><th className="p-2">Status</th></tr></thead>
+          <thead className="text-left text-xs text-muted-foreground bg-muted/30"><tr><th className="p-2">Date</th><th className="p-2">Test</th><th className="p-2">Result</th><th className="p-2">Units</th><th className="p-2">Ref</th><th className="p-2">Status</th><th className="p-2"></th></tr></thead>
           <tbody>
-            {patient.investigations.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground text-sm">No investigations yet.</td></tr>}
-            {patient.investigations.map((i) => (
+            {patient.investigations.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground text-sm">No investigations yet.</td></tr>}
+            {patient.investigations.map((i) => editingId === i.id ? (
+              <tr key={i.id} className="border-t bg-muted/30">
+                <td className="p-1"><Input type="date" className="h-8" value={edit.date} onChange={(e) => setEdit({ ...edit, date: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8" value={edit.testName} onChange={(e) => setEdit({ ...edit, testName: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8 font-mono" value={edit.result} onChange={(e) => setEdit({ ...edit, result: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8" value={edit.units} onChange={(e) => setEdit({ ...edit, units: e.target.value })} /></td>
+                <td className="p-1"><Input className="h-8" value={edit.referenceRange} onChange={(e) => setEdit({ ...edit, referenceRange: e.target.value })} /></td>
+                <td className="p-1">
+                  <select className="h-8 rounded-md border bg-background px-2 text-sm" value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value as "Normal" | "Abnormal" | "Critical" })}>
+                    <option>Normal</option><option>Abnormal</option><option>Critical</option>
+                  </select>
+                </td>
+                <td className="p-1"><div className="flex gap-1"><Button size="sm" onClick={saveEdit}>Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>×</Button></div></td>
+              </tr>
+            ) : (
               <tr key={i.id} className="border-t">
                 <td className="p-2 text-xs">{formatDate(i.date)}</td>
                 <td className="p-2">{i.testName}</td>
@@ -370,6 +479,7 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
                 <td className="p-2 text-xs">{i.units ?? "—"}</td>
                 <td className="p-2 text-xs">{i.referenceRange ?? "—"}</td>
                 <td className="p-2"><Badge variant="outline" className={i.status === "Normal" ? "border-accent text-accent" : i.status === "Critical" ? "border-destructive text-destructive" : "border-warning text-warning"}>{i.status ?? "—"}</Badge></td>
+                <td className="p-2"><div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(i)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeRow(i.id)}><Trash2 className="h-3 w-3" /></Button></div></td>
               </tr>
             ))}
           </tbody>
@@ -378,6 +488,7 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
     </>
   );
 }
+
 
 function AttachmentsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   if (!patient) return null;
