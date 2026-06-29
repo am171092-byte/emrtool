@@ -78,10 +78,11 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cc.trim()) { toast.error("Chief complaint is required"); return; }
     const id = visit?.id ?? uid("vis");
+    const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
     const next: Visit = {
       id, patientId: patient.id,
       date: new Date(date).toISOString(),
@@ -91,7 +92,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
       prescriptions,
       investigations,
-      nextFollowUp: nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined,
+      nextFollowUp: nextFollowUpIso,
       followUpNote: followUpNote || undefined,
       jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
       das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
@@ -99,6 +100,18 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     upsertVisit(next);
     setDirty(false);
     toast.success("Visit saved");
+    const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
+    if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
+      const ok = await createCalendarEvent({
+        patientName: patient.fullName,
+        patientId: patient.id,
+        date: nextFollowUpIso,
+        time: "",
+        duration: 30,
+        notes: followUpNote,
+      });
+      if (ok) toast.success("Follow-up added to Google Calendar");
+    }
     onSaved();
   };
 
