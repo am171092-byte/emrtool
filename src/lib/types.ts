@@ -72,7 +72,9 @@ export interface Visit {
   patientId: string;
   date: string;       // ISO
   time: string;       // HH:MM
-  chiefComplaint: string;
+  chiefComplaints: string[];
+  /** @deprecated use chiefComplaints */
+  chiefComplaint?: string;
   soap: {
     historyOfPresentingIllness: string;
     currentVisit: string;
