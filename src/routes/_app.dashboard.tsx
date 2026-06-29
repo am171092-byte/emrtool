@@ -1,13 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { useAllPatients, useAllVisits, useRecentIds } from "@/lib/use-store";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, getAuthToken } from "@/lib/auth-context";
 import { calcAge, daysUntil, formatDate } from "@/lib/format";
-import { Plus, UserPlus, Calculator } from "lucide-react";
+import { Plus, UserPlus, Calculator, Loader2, Calendar as CalendarIcon } from "lucide-react";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+
+interface TodayAppointment {
+  id: string;
+  title: string;
+  start: string;
+  matchedPatient?: { id: string; fullName: string };
+}
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — RheumCare" }] }),
@@ -57,6 +66,8 @@ function Dashboard() {
         <Stat label="Visits this month" value={visitsThisMonth} />
         <Stat label="Pending follow-ups" value={upcoming.length} />
       </div>
+
+      <TodaysAppointments />
 
       <div className="grid gap-4 md:grid-cols-5">
         <Card className="p-5 md:col-span-3">
@@ -145,5 +156,88 @@ function EmptyRecent() {
     <div className="text-sm text-muted-foreground py-8 text-center">
       No patients yet. <Link to="/patients/new" className="text-primary underline">Add your first patient</Link>.
     </div>
+  );
+}
+
+function TodaysAppointments() {
+  const [items, setItems] = useState<TodayAppointment[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) { setHidden(true); setLoading(false); return; }
+    let cancelled = false;
+    fetch(`${API_BASE}/api/calendar/today`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const list: TodayAppointment[] = Array.isArray(data) ? data : (data?.events ?? data?.appointments ?? []);
+        setItems(list);
+      })
+      .catch(() => { if (!cancelled) setHidden(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (hidden) return null;
+
+  const fmtTime = (iso: string) => {
+    try { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    catch { return iso; }
+  };
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold flex items-center gap-2">
+          <CalendarIcon className="h-4 w-4" /> Today's Appointments
+        </h2>
+        {items && <span className="text-xs text-muted-foreground">{items.length}</span>}
+      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading appointments…
+        </div>
+      ) : !items || items.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-4 text-center">No appointments scheduled for today</div>
+      ) : (
+        <div className="space-y-1">
+          {items.map((a) => {
+            const name = a.matchedPatient?.fullName ?? a.title;
+            const row = (
+              <>
+                <div className="font-mono text-xs text-muted-foreground w-14 shrink-0">{fmtTime(a.start)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{name}</div>
+                  {a.matchedPatient && a.title !== name && (
+                    <div className="text-xs text-muted-foreground truncate">{a.title}</div>
+                  )}
+                </div>
+              </>
+            );
+            return a.matchedPatient ? (
+              <Link
+                key={a.id}
+                to="/patients/$patientId"
+                params={{ patientId: a.matchedPatient.id }}
+                className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-muted transition-colors"
+              >
+                {row}
+              </Link>
+            ) : (
+              <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-md">
+                {row}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
   );
 }
