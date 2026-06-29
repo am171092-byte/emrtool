@@ -130,7 +130,7 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
   if (v.nextFollowUp) {
     sectionTitle("Next Follow-up");
     const reason = v.nextVisitReason ? ` — ${v.nextVisitReason}` : "";
-    writeText(`${new Date(v.nextFollowUp).toLocaleDateString()}${reason}`, { size: 10 });
+    writeText(`${new Date(v.nextFollowUp).toLocaleDateString()}`, { size: 10 });
   }
 
   return doc;
