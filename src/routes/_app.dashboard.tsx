@@ -1,13 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { useAllPatients, useAllVisits, useRecentIds } from "@/lib/use-store";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, getAuthToken } from "@/lib/auth-context";
 import { calcAge, daysUntil, formatDate } from "@/lib/format";
-import { Plus, UserPlus, Calculator } from "lucide-react";
+import { Plus, UserPlus, Calculator, Loader2, Calendar as CalendarIcon } from "lucide-react";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+
+interface TodayAppointment {
+  id: string;
+  title: string;
+  start: string;
+  matchedPatient?: { id: string; fullName: string };
+}
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — RheumCare" }] }),
