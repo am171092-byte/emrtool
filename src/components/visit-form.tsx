@@ -98,7 +98,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       chiefComplaints,
       chiefComplaint: chiefComplaints.join(", "),
       soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
-      vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
+      vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
       prescriptions,
       investigations,
       investigationNotes: investigationNotes || undefined,
