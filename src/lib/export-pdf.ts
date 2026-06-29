@@ -12,10 +12,11 @@ const RIGHT = 10;          // 1 cm
 const CONTENT_W = PAGE_W - LEFT - RIGHT;
 
 // Spacing tokens (mm).
-const SECTION_GAP = 8;        // 8mm gap between sections
+const SECTION_GAP = 6;        // 6mm gap before each section header
 const HEADER_PAD_BELOW = 2;   // below header before content
 const INFO_GAP = 4;           // below patient info block
 const MIN_SECTION_SPACE = 25; // require >=25mm before starting a new section
+const TABLE_GAP_BELOW_HEADER = 4; // 4mm between section header and table
 const BODY_SIZE = 10;
 const HEADER_SIZE = 11;
 const FONT = "helvetica"; // clean sans-serif bundled with jsPDF
