@@ -245,9 +245,10 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
   const [height, setHeight] = useState<number | "">("");
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
+  const [respRate, setRespRate] = useState<number | "">("");
 
   const add = () => {
-    if (!bpS && !bpD && !hr && !weight && !temp && !spo2) return;
+    if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate) return;
     upsertPatient({
       ...patient,
       vitals: [
@@ -255,6 +256,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
           bpSystolic: typeof bpS === "number" ? bpS : undefined,
           bpDiastolic: typeof bpD === "number" ? bpD : undefined,
           hr: typeof hr === "number" ? hr : undefined,
+          respiratoryRate: typeof respRate === "number" ? respRate : undefined,
           weight: typeof weight === "number" ? weight : undefined,
           height: typeof height === "number" ? height : patient.vitals?.[0]?.height,
           temperature: typeof temp === "number" ? temp : undefined,
@@ -263,7 +265,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
         ...v,
       ],
     });
-    setBpS(""); setBpD(""); setHr(""); setWeight(""); setHeight(""); setTemp(""); setSpo2("");
+    setBpS(""); setBpD(""); setHr(""); setRespRate(""); setWeight(""); setHeight(""); setTemp(""); setSpo2("");
     toast.success("Vitals added");
   };
 
