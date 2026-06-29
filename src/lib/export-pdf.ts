@@ -25,9 +25,10 @@ export function exportVisitPdf(p: Patient, v: Visit) {
   line(v.chiefComplaint || "—");
   y += 2;
 
-  line("Subjective", { bold: true, size: 11 }); line(v.soap.subjective || "—");
-  line("Objective", { bold: true, size: 11 }); line(v.soap.objective || "—");
-  line("Assessment", { bold: true, size: 11 }); line(v.soap.assessment || "—");
+  line("History of Presenting Illness", { bold: true, size: 11 }); line(v.soap.historyOfPresentingIllness || v.soap.subjective || "—");
+  line("Current Visit", { bold: true, size: 11 }); line(v.soap.currentVisit || "—");
+  line("Examination", { bold: true, size: 11 }); line(v.soap.examination || v.soap.objective || "—");
+  line("Impression", { bold: true, size: 11 }); line(v.soap.impression || v.soap.assessment || "—");
   line("Plan", { bold: true, size: 11 }); line(v.soap.plan || "—");
 
   if (v.prescriptions.length) {
@@ -38,6 +39,7 @@ export function exportVisitPdf(p: Patient, v: Visit) {
   if (v.investigations.length) {
     line("Investigations", { bold: true, size: 13 });
     v.investigations.forEach((i) => line(`• ${i.testName}  ${i.urgency ?? ""}  ${i.notes ?? ""}`));
+    if (v.investigationNotes) { line("Subjective Notes:", { bold: true }); line(v.investigationNotes); }
   }
   if (v.das28) {
     line("DAS28", { bold: true, size: 13 });

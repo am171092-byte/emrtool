@@ -35,9 +35,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [date, setDate] = useState(visit?.date.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
   const [cc, setCc] = useState(visit?.chiefComplaint ?? "");
-  const [subjective, setSubjective] = useState(visit?.soap.subjective ?? "");
-  const [objective, setObjective] = useState(visit?.soap.objective ?? "");
-  const [assessment, setAssessment] = useState(visit?.soap.assessment ?? "");
+  const [hpi, setHpi] = useState(visit?.soap.historyOfPresentingIllness ?? visit?.soap.subjective ?? "");
+  const [currentVisit, setCurrentVisit] = useState(visit?.soap.currentVisit ?? "");
+  const [examination, setExamination] = useState(visit?.soap.examination ?? visit?.soap.objective ?? "");
+  const [impression, setImpression] = useState(visit?.soap.impression ?? visit?.soap.assessment ?? "");
   const [plan, setPlan] = useState(visit?.soap.plan ?? "");
 
   const prefVitals = visit?.vitals ?? lastVisit?.vitals ?? patient.vitals?.[0];
@@ -50,6 +51,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(visit?.prescriptions ?? []);
   const [investigations, setInvestigations] = useState<Investigation[]>(visit?.investigations ?? []);
+  const [investigationNotes, setInvestigationNotes] = useState(visit?.investigationNotes ?? "");
   const [nextFollowUp, setNextFollowUp] = useState(visit?.nextFollowUp?.slice(0, 10) ?? "");
   const [followUpNote, setFollowUpNote] = useState(visit?.followUpNote ?? "");
 
@@ -70,7 +72,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
     setDirty(true);
-  }, [cc, subjective, objective, assessment, plan, prescriptions, investigations, jointStates, das28Snap]);
+  }, [cc, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap]);
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -88,10 +90,11 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       date: new Date(date).toISOString(),
       time,
       chiefComplaint: cc,
-      soap: { subjective, objective, assessment, plan },
+      soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
       vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
       prescriptions,
       investigations,
+      investigationNotes: investigationNotes || undefined,
       nextFollowUp: nextFollowUpIso,
       followUpNote: followUpNote || undefined,
       jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
@@ -139,9 +142,11 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         <div className="grid lg:grid-cols-2 gap-4">
           <Card className="p-5 space-y-4">
             <h2 className="font-semibold">SOAP note</h2>
-            <SoapField label="Subjective" value={subjective} onChange={setSubjective} placeholder="Patient reports…" />
-            <SoapField label="Objective" value={objective} onChange={setObjective} placeholder="On examination…" />
-            <SoapField label="Assessment" value={assessment} onChange={setAssessment} placeholder="Impression: …" />
+            <h2 className="font-semibold">Visit notes</h2>
+            <SoapField label="History of Presenting Illness" value={hpi} onChange={setHpi} placeholder="Patient reports…" />
+            <SoapField label="Current Visit" value={currentVisit} onChange={setCurrentVisit} placeholder="What happened this visit…" />
+            <SoapField label="Examination" value={examination} onChange={setExamination} placeholder="On examination…" />
+            <SoapField label="Impression" value={impression} onChange={setImpression} placeholder="Impression: …" />
             <SoapField label="Plan" value={plan} onChange={setPlan} placeholder="1. Continue… 2. Start…" />
           </Card>
 
@@ -188,13 +193,17 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 {investigations.map((inv, i) => (
                   <div key={inv.id} className="grid grid-cols-12 gap-1">
                     <Input className="col-span-6" placeholder="Test" value={inv.testName} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, testName: e.target.value } : x))} />
-                    <select className="col-span-3 rounded-md border bg-background px-2 text-sm" value={inv.urgency} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, urgency: e.target.value as "Routine" | "Urgent" } : x))}>
-                      <option>Routine</option><option>Urgent</option>
+                    <select className="col-span-3 rounded-md border bg-background px-2 text-sm" value={inv.urgency} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, urgency: e.target.value as "Routine" | "Urgent" | "Follow up" } : x))}>
+                      <option>Routine</option><option>Urgent</option><option>Follow up</option>
                     </select>
                     <Input className="col-span-2" placeholder="Notes" value={inv.notes ?? ""} onChange={(e) => setInvestigations(investigations.map((x, idx) => idx === i ? { ...x, notes: e.target.value } : x))} />
                     <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setInvestigations(investigations.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4">
+                <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">Subjective Notes</Label>
+                <Textarea rows={3} value={investigationNotes} onChange={(e) => setInvestigationNotes(e.target.value)} placeholder="Overall notes about investigations…" className="resize-y" />
               </div>
             </Card>
 
@@ -202,7 +211,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
               <h2 className="font-semibold mb-2">Next follow-up</h2>
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Date"><Input type="date" value={nextFollowUp} onChange={(e) => setNextFollowUp(e.target.value)} /></Field>
-                <Field label="Instructions"><Input value={followUpNote} onChange={(e) => setFollowUpNote(e.target.value)} /></Field>
+                <Field label="Advice"><Input value={followUpNote} onChange={(e) => setFollowUpNote(e.target.value)} /></Field>
               </div>
             </Card>
           </div>

@@ -38,11 +38,18 @@ function normalizePatient(p: Patient): Patient {
 }
 
 function normalizeVisit(v: Visit): Visit {
+  const s: any = v.soap ?? {};
   return {
     ...v,
     prescriptions: v.prescriptions ?? [],
     investigations: v.investigations ?? [],
-    soap: v.soap ?? { subjective: "", objective: "", assessment: "", plan: "" },
+    soap: {
+      historyOfPresentingIllness: s.historyOfPresentingIllness ?? s.subjective ?? "",
+      currentVisit: s.currentVisit ?? "",
+      examination: s.examination ?? s.objective ?? "",
+      impression: s.impression ?? s.assessment ?? "",
+      plan: s.plan ?? "",
+    },
   };
 }
 
