@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,19 +44,21 @@ function flagBadge(flag?: string) {
 
 function statusFromFlag(flag?: string): "Normal" | "Abnormal" | "Critical" {
   const f = (flag || "").toLowerCase();
-  if (f === "normal") return "Normal";
   if (f === "high" || f === "low") return "Abnormal";
   return "Normal";
 }
 
-async function fileToBase64(file: File): Promise<{ base64: string; dataUrl: string }> {
+function cleanBase64(dataUrl: string): string {
+  if (!dataUrl) return "";
+  let s = dataUrl.trim();
+  if (s.startsWith("data:") && s.includes(",")) s = s.slice(s.indexOf(",") + 1);
+  return s.replace(/\s/g, "");
+}
+
+function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => {
-      const dataUrl = String(r.result);
-      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-      resolve({ base64, dataUrl });
-    };
+    r.onload = () => resolve(cleanBase64(String(r.result)));
     r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
   });
@@ -70,10 +72,25 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [saving, setSaving] = useState(false);
 
+  const resetAll = () => {
+    setLoading(false);
+    setError(null);
+    setResult(null);
+    setBase64("");
+    setChecked({});
+    setSaving(false);
+  };
+
+  const handleClose = () => {
+    resetAll();
+    onClose();
+  };
+
   const runExtract = async (f: File, b64: string) => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setChecked({});
     try {
       const token = getAuthToken();
       const res = await fetch(`${API_BASE}/api/extract-lab-values`, {
@@ -101,13 +118,29 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
     }
   };
 
-  // Trigger initial extraction
-  if (file && !loading && !result && !error && !base64) {
-    fileToBase64(file).then(({ base64: b64 }) => {
-      setBase64(b64);
-      runExtract(file, b64);
-    });
-  }
+  // When file changes, fully reset and re-extract
+  useEffect(() => {
+    if (!file) {
+      resetAll();
+      return;
+    }
+    let cancelled = false;
+    resetAll();
+    setLoading(true);
+    fileToBase64(file)
+      .then((b64) => {
+        if (cancelled) return;
+        setBase64(b64);
+        return runExtract(file, b64);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Could not read file");
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file]);
 
   const reextract = () => {
     if (file && base64) runExtract(file, base64);
@@ -122,7 +155,6 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
     }
     setSaving(true);
     try {
-      // Save original file as attachment
       await addAttachment(patient.id, {
         filename: file.name,
         mimeType: file.type,
@@ -145,23 +177,23 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
         investigations: [...newRows, ...patient.investigations],
       });
       toast.success(`Saved ${picks.length} lab value${picks.length === 1 ? "" : "s"}`);
-      onClose();
+      handleClose();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save");
-    } finally {
       setSaving(false);
     }
   };
 
-  const readability = result?.notes && /unclear|unreadab|blurr|poor quality|illegible/i.test(result.notes);
+  const readability = result?.notes && /unclear|unreadab|blurr|poor quality|illegible|warning/i.test(result.notes);
+  const emptyValues = !!result && result.values.length === 0;
 
   return (
-    <Dialog open={!!file} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={!!file} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Extract lab values</DialogTitle>
           <DialogDescription>
-            AI-extracted values. Please verify against the original report.
+            AI-extracted values — please verify against the original report.
           </DialogDescription>
         </DialogHeader>
 
@@ -183,16 +215,25 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
 
         {result && !loading && (
           <div className="space-y-3">
-            <div className="rounded-lg border p-3 text-sm space-y-1">
-              {result.patientName && <div><span className="text-muted-foreground">Report for:</span> <span className="font-medium">{result.patientName}</span></div>}
-              {result.reportDate && <div><span className="text-muted-foreground">Date:</span> {result.reportDate}</div>}
-              {result.labName && <div><span className="text-muted-foreground">Lab:</span> {result.labName}</div>}
-            </div>
+            {(result.patientName || result.reportDate || result.labName) && (
+              <div className="rounded-lg border p-3 text-sm space-y-1">
+                {result.patientName && <div><span className="text-muted-foreground">Report for:</span> <span className="font-medium">{result.patientName}</span></div>}
+                {result.reportDate && <div><span className="text-muted-foreground">Date:</span> {result.reportDate}</div>}
+                {result.labName && <div><span className="text-muted-foreground">Lab:</span> {result.labName}</div>}
+              </div>
+            )}
 
-            {readability && (
-              <div className="rounded-md border border-warning/40 bg-warning/10 text-warning-foreground p-3 text-sm flex items-start gap-2">
+            {(readability || emptyValues) && result.notes && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5 text-warning" />
                 <div>{result.notes}</div>
+              </div>
+            )}
+
+            {emptyValues && !result.notes && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-warning" />
+                <div>No lab values could be extracted from this report. Try a clearer image or re-extract.</div>
               </div>
             )}
 
@@ -201,45 +242,44 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
               <Button size="sm" variant="outline" onClick={reextract}><RotateCw className="h-3 w-3 mr-1" /> Re-extract</Button>
             </div>
 
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs text-muted-foreground">
-                  <tr>
-                    <th className="p-2 w-8"></th>
-                    <th className="text-left p-2">Test</th>
-                    <th className="text-left p-2">Value</th>
-                    <th className="text-left p-2">Unit</th>
-                    <th className="text-left p-2">Reference</th>
-                    <th className="text-left p-2">Flag</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.values.length === 0 && (
-                    <tr><td colSpan={6} className="p-4 text-center text-muted-foreground text-xs">No values extracted.</td></tr>
-                  )}
-                  {result.values.map((v, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="p-2"><Checkbox checked={!!checked[i]} onCheckedChange={(c) => setChecked({ ...checked, [i]: c === true })} /></td>
-                      <td className="p-1"><Input className="h-8" value={v.testName} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, testName: e.target.value }; setResult({ ...result, values: next }); }} /></td>
-                      <td className="p-1 w-24"><Input className="h-8 font-mono" value={v.value} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, value: e.target.value }; setResult({ ...result, values: next }); }} /></td>
-                      <td className="p-1 w-20"><Input className="h-8" value={v.unit ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, unit: e.target.value }; setResult({ ...result, values: next }); }} /></td>
-                      <td className="p-1 w-28"><Input className="h-8" value={v.referenceRange ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, referenceRange: e.target.value }; setResult({ ...result, values: next }); }} /></td>
-                      <td className="p-2">{flagBadge(v.flag)}</td>
+            {result.values.length > 0 && (
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs text-muted-foreground">
+                    <tr>
+                      <th className="p-2 w-8"></th>
+                      <th className="text-left p-2">Test</th>
+                      <th className="text-left p-2">Value</th>
+                      <th className="text-left p-2">Unit</th>
+                      <th className="text-left p-2">Reference</th>
+                      <th className="text-left p-2">Flag</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {result.notes && !readability && (
-              <div className="text-xs text-muted-foreground italic">{result.notes}</div>
+                  </thead>
+                  <tbody>
+                    {result.values.map((v, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="p-2"><Checkbox checked={!!checked[i]} onCheckedChange={(c) => setChecked({ ...checked, [i]: c === true })} /></td>
+                        <td className="p-1"><Input className="h-8" value={v.testName} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, testName: e.target.value }; setResult({ ...result, values: next }); }} /></td>
+                        <td className="p-1 w-24"><Input className="h-8 font-mono" value={v.value} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, value: e.target.value }; setResult({ ...result, values: next }); }} /></td>
+                        <td className="p-1 w-20"><Input className="h-8" value={v.unit ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, unit: e.target.value }; setResult({ ...result, values: next }); }} /></td>
+                        <td className="p-1 w-28"><Input className="h-8" value={v.referenceRange ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, referenceRange: e.target.value }; setResult({ ...result, values: next }); }} /></td>
+                        <td className="p-2">{flagBadge(v.flag)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
+
+            <div className="text-xs text-muted-foreground italic">
+              AI-extracted values — please verify against the original report.
+            </div>
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={save} disabled={!result || saving || loading}>
+          <Button variant="outline" onClick={handleClose} disabled={saving}>Cancel</Button>
+          <Button onClick={save} disabled={!result || result.values.length === 0 || saving || loading}>
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</> : "Save Selected Values"}
           </Button>
         </DialogFooter>
