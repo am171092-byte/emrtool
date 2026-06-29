@@ -34,7 +34,11 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const [date, setDate] = useState(visit?.date.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
-  const [cc, setCc] = useState(visit?.chiefComplaint ?? "");
+  const [chiefComplaints, setChiefComplaints] = useState<string[]>(
+    visit?.chiefComplaints && visit.chiefComplaints.length > 0
+      ? visit.chiefComplaints
+      : (visit?.chiefComplaint ? [visit.chiefComplaint] : [])
+  );
   const [hpi, setHpi] = useState(visit?.soap.historyOfPresentingIllness ?? visit?.soap.subjective ?? "");
   const [currentVisit, setCurrentVisit] = useState(visit?.soap.currentVisit ?? "");
   const [examination, setExamination] = useState(visit?.soap.examination ?? visit?.soap.objective ?? "");
