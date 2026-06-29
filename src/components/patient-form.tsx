@@ -53,13 +53,14 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
       return;
     }
     const id = initial?.id ?? uid("p");
-    const vitalsEntry = (bpS || bpD || hr || weight || height || temp || spo2)
+    const vitalsEntry = (bpS || bpD || hr || weight || height || temp || spo2 || respRate)
       ? [{
           id: uid("v"),
           date: new Date().toISOString(),
           bpSystolic: typeof bpS === "number" ? bpS : undefined,
           bpDiastolic: typeof bpD === "number" ? bpD : undefined,
           hr: typeof hr === "number" ? hr : undefined,
+          respiratoryRate: typeof respRate === "number" ? respRate : undefined,
           weight: typeof weight === "number" ? weight : undefined,
           height: typeof height === "number" ? height : undefined,
           temperature: typeof temp === "number" ? temp : undefined,
