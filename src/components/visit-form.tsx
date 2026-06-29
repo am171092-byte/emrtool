@@ -304,7 +304,43 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         </div>
       </form>
       <AIDrawer open={aiOpen} onOpenChange={setAiOpen} patient={patient} />
+      <Dialog open={carryOpen !== null} onOpenChange={(o) => !o && setCarryOpen(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {carryOpen === "current" ? "Carry forward current medications" : "Carry forward from last visit"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[50vh] overflow-auto space-y-2">
+            {carrySource.length === 0 && (
+              <div className="text-sm text-muted-foreground py-4 text-center">
+                {carryOpen === "current" ? "No current medications on file." : "No prior visit with prescriptions found."}
+              </div>
+            )}
+            {carrySource.map((s) => (
+              <label key={s.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover:bg-muted/50">
+                <Checkbox
+                  checked={!!carryPicked[s.id]}
+                  onCheckedChange={(c) => setCarryPicked((p) => ({ ...p, [s.id]: !!c }))}
+                  className="mt-0.5"
+                />
+                <div className="text-sm flex-1">
+                  <div className="font-medium">{s.drug || "(unnamed)"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {[s.dose, s.frequency, s.duration].filter(Boolean).join(" · ") || "no details"}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setCarryOpen(null)}>Cancel</Button>
+            <Button type="button" onClick={addCarry} disabled={carrySource.length === 0}>Add selected</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 }
 
