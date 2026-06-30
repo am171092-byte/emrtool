@@ -26,6 +26,7 @@ function PatientList() {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"last_visit" | "name" | "followup">("last_visit");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
