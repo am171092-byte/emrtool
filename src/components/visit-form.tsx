@@ -73,6 +73,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [jointMode, setJointMode] = useState<Mode>("tender");
   const [das28Snap, setDas28Snap] = useState<DAS28Snapshot | null>(visit?.das28 ?? null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const tjc = Object.values(jointStates).filter((j) => j.tender).length;
   const sjc = Object.values(jointStates).filter((j) => j.swollen).length;
