@@ -34,6 +34,7 @@ function PatientRecord() {
   const p = usePatient(patientId);
   const visits = useVisitsForPatient(patientId);
   const nav = useNavigate();
+  const { doctor } = useAuth();
   const [editingMeds, setEditingMeds] = useState(false);
 
   useEffect(() => {
