@@ -603,8 +603,10 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
               <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Lab review, DAS28" />
             </div>
             <div className="flex gap-2">
-              <Button onClick={save} size="sm" className="flex-1">Save</Button>
-              {patient.nextFollowUp && <Button onClick={clear} variant="ghost" size="sm">Clear</Button>}
+              <Button onClick={save} size="sm" className="flex-1" disabled={saving || !date}>
+                {saving ? <><Loader2 className="h-3 w-3 mr-2 animate-spin" />Saving…</> : "Save"}
+              </Button>
+              {patient.nextFollowUp && <Button onClick={clear} variant="ghost" size="sm" disabled={saving}>Clear</Button>}
             </div>
           </PopoverContent>
         </Popover>
