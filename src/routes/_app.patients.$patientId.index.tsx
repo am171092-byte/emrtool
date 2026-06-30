@@ -553,26 +553,35 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(patient.nextFollowUp?.slice(0, 10) ?? "");
   const [reason, setReason] = useState(patient.nextVisitReason ?? "");
+  const [saving, setSaving] = useState(false);
   const due = daysUntil(patient.nextFollowUp);
 
   const save = async () => {
-    if (!date) return;
-    const iso = new Date(date).toISOString();
-    upsertPatient({ ...patient, nextFollowUp: iso, nextVisitReason: reason || undefined });
-    toast.success("Next visit scheduled");
-    setOpen(false);
-    const ok = await createCalendarEvent({
-      patientName: patient.fullName,
-      patientId: patient.id,
-      date: iso,
-      time: "",
-      duration: 30,
-      notes: reason,
-    });
-    if (ok) toast.success("Follow-up added to Google Calendar");
+    if (!date || saving) return;
+    setSaving(true);
+    const toastId = toast.loading("Scheduling next visit…");
+    try {
+      const iso = new Date(date).toISOString();
+      await upsertPatient({ ...patient, nextFollowUp: iso, nextVisitReason: reason || undefined });
+      toast.loading("Syncing to Google Calendar…", { id: toastId });
+      await createCalendarEvent({
+        patientName: patient.fullName,
+        patientId: patient.id,
+        date: iso,
+        time: "",
+        duration: 30,
+        notes: reason,
+      });
+      toast.success("Next visit scheduled", { id: toastId });
+      setOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to schedule", { id: toastId });
+    } finally {
+      setSaving(false);
+    }
   };
-  const clear = () => {
-    upsertPatient({ ...patient, nextFollowUp: undefined, nextVisitReason: undefined });
+  const clear = async () => {
+    await upsertPatient({ ...patient, nextFollowUp: undefined, nextVisitReason: undefined });
     setDate(""); setReason("");
   };
 
