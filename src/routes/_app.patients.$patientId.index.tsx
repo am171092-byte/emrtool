@@ -161,7 +161,7 @@ function PatientRecord() {
                         <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); exportVisitPdf(p, v, { mode: "save", doctor }); }}><FileDown className="h-3 w-3" /></Button>
 
 
-                        <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.preventDefault(); if (confirm("Delete this visit?")) { deleteVisit(v.id); toast.success("Visit deleted"); } }}><Trash2 className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={async (e) => { e.preventDefault(); if (!confirm("Delete this visit?")) return; const tid = toast.loading("Deleting visit…"); try { await deleteVisit(v.id); toast.success("Visit deleted", { id: tid }); } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to delete", { id: tid }); } }}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </summary>
                     <div className="mt-3 space-y-3 text-sm border-t pt-3">
