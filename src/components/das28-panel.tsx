@@ -77,8 +77,8 @@ export function DAS28Panel({ patient }: { patient: Patient }) {
 
         <div className="lg:col-span-3 space-y-3">
           <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onChange={setSnap} />
-          <Button onClick={save} className="w-full" size="lg" disabled={!snap || (tjc === 0 && sjc === 0)}>
-            <Save className="h-4 w-4 mr-2" /> Save to patient record
+          <Button onClick={save} className="w-full" size="lg" disabled={!snap || (tjc === 0 && sjc === 0) || saving}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving DAS28…</> : <><Save className="h-4 w-4 mr-2" /> Save to patient record</>}
           </Button>
         </div>
       </div>
