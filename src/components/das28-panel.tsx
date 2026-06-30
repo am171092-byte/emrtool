@@ -8,7 +8,7 @@ import { fullJointLabel } from "@/lib/joints";
 import { upsertPatient, uid } from "@/lib/api-store";
 import { formatDate } from "@/lib/format";
 import { activityLabel } from "@/lib/das28";
-import { RotateCcw, Save, Trash2 } from "lucide-react";
+import { RotateCcw, Save, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function DAS28Panel({ patient }: { patient: Patient }) {
