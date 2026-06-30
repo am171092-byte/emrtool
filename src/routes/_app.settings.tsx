@@ -143,7 +143,7 @@ function SettingsPage() {
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving || !form.name.trim()}>{saving ? "Saving…" : "Save"}</Button>
+              <Button onClick={handleSave} disabled={saving || !form.name.trim()}>{saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving profile…</> : "Save"}</Button>
             </div>
           </div>
         )}
