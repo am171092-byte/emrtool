@@ -195,8 +195,8 @@ DAS28-CRP: ${scoreCrp?.toFixed(2) ?? "—"} → ${activityLabel(scoreCrp).label}
           {onSave && (
             <div className="space-y-1">
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" onClick={handleSave} className="w-full" size="sm">
-                  <Save className="h-4 w-4 mr-2" /> Save DAS28
+                <Button type="button" onClick={handleSave} className="w-full" size="sm" disabled={!!savedAt}>
+                  <Save className="h-4 w-4 mr-2" /> {savedAt ? "Saved" : "Save DAS28"}
                 </Button>
                 <Button type="button" onClick={handleReset} variant="outline" className="w-full" size="sm">
                   <RotateCcw className="h-4 w-4 mr-2" /> Reset
