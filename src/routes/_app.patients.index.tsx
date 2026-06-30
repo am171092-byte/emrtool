@@ -26,6 +26,7 @@ function PatientList() {
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"last_visit" | "name" | "followup">("last_visit");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
@@ -151,11 +152,28 @@ function PatientList() {
             <AlertDialogDescription>This removes the patient and all their visits from this device. This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => {
-              if (confirmDel) { deletePatient(confirmDel); toast.success("Patient deleted"); }
-              setConfirmDel(null);
-            }}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              disabled={deleting}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!confirmDel) return;
+                setDeleting(true);
+                const tid = toast.loading("Deleting patient…");
+                try {
+                  await deletePatient(confirmDel);
+                  toast.success("Patient deleted", { id: tid });
+                  setConfirmDel(null);
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Failed to delete", { id: tid });
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

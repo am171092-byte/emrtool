@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { upsertVisit, upsertPatient, uid, getVisitsForPatient } from "@/lib/api-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
-import { Plus, Trash2, Sparkles, History, Pill } from "lucide-react";
+import { Plus, Trash2, Sparkles, History, Pill, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -73,6 +73,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [jointMode, setJointMode] = useState<Mode>("tender");
   const [das28Snap, setDas28Snap] = useState<DAS28Snapshot | null>(visit?.das28 ?? null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const tjc = Object.values(jointStates).filter((j) => j.tender).length;
   const sjc = Object.values(jointStates).filter((j) => j.swollen).length;
@@ -91,60 +92,67 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (chiefComplaints.length === 0) { toast.error("At least one chief complaint is required"); return; }
-    const id = visit?.id ?? uid("vis");
-    const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
-    const next: Visit = {
-      id, patientId: patient.id,
-      date: new Date(date).toISOString(),
-      time,
-      chiefComplaints,
-      chiefComplaint: chiefComplaints.join(", "),
-      soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
-      vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
-      prescriptions,
-      investigations,
-      investigationNotes: investigationNotes || undefined,
-      nextFollowUp: nextFollowUpIso,
-      followUpNote: followUpNote || undefined,
-      jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
-      das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
-    };
-    await upsertVisit(next);
+    setSaving(true);
+    const toastId = toast.loading("Saving visit…");
+    try {
+      const id = visit?.id ?? uid("vis");
+      const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
+      const next: Visit = {
+        id, patientId: patient.id,
+        date: new Date(date).toISOString(),
+        time,
+        chiefComplaints,
+        chiefComplaint: chiefComplaints.join(", "),
+        soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
+        vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
+        prescriptions,
+        investigations,
+        investigationNotes: investigationNotes || undefined,
+        nextFollowUp: nextFollowUpIso,
+        followUpNote: followUpNote || undefined,
+        jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
+        das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
+      };
+      await upsertVisit(next);
 
-    // Replace patient's current medications with this visit's prescriptions
-    const newMeds = prescriptions
-      .filter((p) => p.drug && p.drug.trim())
-      .map((p) => ({
-        id: uid("med"),
-        drug: p.drug,
-        dose: p.dose ?? "",
-        frequency: p.frequency ?? "",
-        duration: p.duration ?? "",
-      }));
-    const patientPatch = {
-      ...patient,
-      medications: newMeds,
-      ...(nextFollowUpIso ? { nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined } : {}),
-    };
-    await upsertPatient(patientPatch);
-    setDirty(false);
-    toast.success("Visit saved");
-    toast.success("Current medications updated from visit prescriptions");
+      toast.loading("Updating patient record…", { id: toastId });
+      const newMeds = prescriptions
+        .filter((p) => p.drug && p.drug.trim())
+        .map((p) => ({
+          id: uid("med"),
+          drug: p.drug,
+          dose: p.dose ?? "",
+          frequency: p.frequency ?? "",
+          duration: p.duration ?? "",
+        }));
+      const patientPatch = {
+        ...patient,
+        medications: newMeds,
+        ...(nextFollowUpIso ? { nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined } : {}),
+      };
+      await upsertPatient(patientPatch);
+      setDirty(false);
 
-    const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
-    if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
-      const ok = await createCalendarEvent({
-        patientName: patient.fullName,
-        patientId: patient.id,
-        date: nextFollowUpIso,
-        time: "",
-        duration: 30,
-        notes: followUpNote,
-      });
-      if (ok) toast.success("Follow-up added to Google Calendar");
+      const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
+      if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
+        toast.loading("Syncing calendar…", { id: toastId });
+        await createCalendarEvent({
+          patientName: patient.fullName,
+          patientId: patient.id,
+          date: nextFollowUpIso,
+          time: "",
+          duration: 30,
+          notes: followUpNote,
+        });
+      }
+      toast.success("Visit saved successfully", { id: toastId });
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save visit", { id: toastId });
+      setSaving(false);
     }
-    onSaved();
   };
 
   const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "", notes: "" }]);
@@ -318,8 +326,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
         <div className="h-20 md:hidden" aria-hidden />
         <div className="fixed bottom-14 inset-x-0 md:bottom-0 bg-card border-t p-3 flex gap-2 z-30 no-print shadow-[0_-2px_8px_rgba(0,0,0,0.05)] md:shadow-none">
-          <Button type="button" variant="outline" onClick={onCancel} className="flex-1 md:flex-none">Cancel</Button>
-          <Button type="submit" className="flex-1 md:flex-none">Save visit</Button>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1 md:flex-none">Cancel</Button>
+          <Button type="submit" disabled={saving} className="flex-1 md:flex-none">
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving visit…</> : "Save visit"}
+          </Button>
         </div>
       </form>
       <AIDrawer open={aiOpen} onOpenChange={setAiOpen} patient={patient} />

@@ -215,3 +215,17 @@
 .print-only {
   display: none;
 }
+
+button:disabled,
+button[disabled],
+[role="button"][aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+@keyframes routeloader {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+

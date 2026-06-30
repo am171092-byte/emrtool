@@ -8,13 +8,14 @@ import { fullJointLabel } from "@/lib/joints";
 import { upsertPatient, uid } from "@/lib/api-store";
 import { formatDate } from "@/lib/format";
 import { activityLabel } from "@/lib/das28";
-import { RotateCcw, Save, Trash2 } from "lucide-react";
+import { RotateCcw, Save, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function DAS28Panel({ patient }: { patient: Patient }) {
   const [mode, setMode] = useState<Mode>("tender");
   const [states, setStates] = useState<Record<string, JointState>>({});
   const [snap, setSnap] = useState<DAS28Snapshot | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const list = Object.values(states).filter((j) => j.tender || j.swollen || j.note);
   const tjc = list.filter((j) => j.tender).length;
@@ -22,17 +23,25 @@ export function DAS28Panel({ patient }: { patient: Patient }) {
 
   const history = patient.das28History ?? [];
 
-  const save = () => {
-    if (!snap) return;
-    const entry: DAS28Entry = {
-      id: uid("das"),
-      date: new Date().toISOString(),
-      ...snap,
-      joints: list,
-    };
-    upsertPatient({ ...patient, das28History: [entry, ...history] });
-    toast.success("DAS28 saved to patient record");
-    setStates({});
+  const save = async () => {
+    if (!snap || saving) return;
+    setSaving(true);
+    const tid = toast.loading("Saving DAS28…");
+    try {
+      const entry: DAS28Entry = {
+        id: uid("das"),
+        date: new Date().toISOString(),
+        ...snap,
+        joints: list,
+      };
+      await upsertPatient({ ...patient, das28History: [entry, ...history] });
+      toast.success("DAS28 saved to patient record", { id: tid });
+      setStates({});
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save DAS28", { id: tid });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = (id: string) => {
@@ -68,8 +77,8 @@ export function DAS28Panel({ patient }: { patient: Patient }) {
 
         <div className="lg:col-span-3 space-y-3">
           <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onChange={setSnap} />
-          <Button onClick={save} className="w-full" size="lg" disabled={!snap || (tjc === 0 && sjc === 0)}>
-            <Save className="h-4 w-4 mr-2" /> Save to patient record
+          <Button onClick={save} className="w-full" size="lg" disabled={!snap || (tjc === 0 && sjc === 0) || saving}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving DAS28…</> : <><Save className="h-4 w-4 mr-2" /> Save to patient record</>}
           </Button>
         </div>
       </div>

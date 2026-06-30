@@ -9,7 +9,7 @@ import { TagInput } from "@/components/tag-input";
 import { upsertPatient, uid } from "@/lib/api-store";
 import { calcAge, bmi } from "@/lib/format";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 
 interface Props {
   initial?: Patient;
@@ -42,57 +42,66 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
   const [respRate, setRespRate] = useState<number | "">("");
+  const [saving, setSaving] = useState(false);
 
   const calcBmi = useMemo(() => bmi(typeof weight === "number" ? weight : undefined, typeof height === "number" ? height : undefined), [weight, height]);
   const age = dob ? calcAge(dob) : null;
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!fullName.trim() || !dob || !phone.trim()) {
       toast.error("Name, date of birth, and phone are required.");
       return;
     }
-    const id = initial?.id ?? uid("p");
-    const vitalsEntry = (bpS || bpD || hr || weight || height || temp || spo2 || respRate)
-      ? [{
-          id: uid("v"),
-          date: new Date().toISOString(),
-          bpSystolic: typeof bpS === "number" ? bpS : undefined,
-          bpDiastolic: typeof bpD === "number" ? bpD : undefined,
-          hr: typeof hr === "number" ? hr : undefined,
-          respiratoryRate: typeof respRate === "number" ? respRate : undefined,
-          weight: typeof weight === "number" ? weight : undefined,
-          height: typeof height === "number" ? height : undefined,
-          temperature: typeof temp === "number" ? temp : undefined,
-          spo2: typeof spo2 === "number" ? spo2 : undefined,
-        }]
-      : [];
+    setSaving(true);
+    const toastId = toast.loading(initial ? "Updating patient…" : "Saving patient…");
+    try {
+      const id = initial?.id ?? uid("p");
+      const vitalsEntry = (bpS || bpD || hr || weight || height || temp || spo2 || respRate)
+        ? [{
+            id: uid("v"),
+            date: new Date().toISOString(),
+            bpSystolic: typeof bpS === "number" ? bpS : undefined,
+            bpDiastolic: typeof bpD === "number" ? bpD : undefined,
+            hr: typeof hr === "number" ? hr : undefined,
+            respiratoryRate: typeof respRate === "number" ? respRate : undefined,
+            weight: typeof weight === "number" ? weight : undefined,
+            height: typeof height === "number" ? height : undefined,
+            temperature: typeof temp === "number" ? temp : undefined,
+            spo2: typeof spo2 === "number" ? spo2 : undefined,
+          }]
+        : [];
 
-    const next: Patient = {
-      id,
-      fullName: fullName.trim(),
-      dob,
-      sex,
-      phone: phone.trim(),
-      email: email.trim() || undefined,
-      address: address.trim() || undefined,
-      allergies,
-      medications: meds,
-      pastMedicalHistory: pmh.trim() || undefined,
-      comorbidities,
-      problemList: problems,
-      primaryDiagnosis: primaryDx.trim() || undefined,
-      tdi: tdi.trim() || undefined,
-      vitals: isNew ? vitalsEntry : initial?.vitals ?? [],
-      investigations: initial?.investigations ?? [],
-      attachments: initial?.attachments ?? [],
-      createdAt: initial?.createdAt ?? new Date().toISOString(),
-      lastAccessedAt: new Date().toISOString(),
-      nextFollowUp: initial?.nextFollowUp,
-    };
-    upsertPatient(next);
-    toast.success("Patient saved successfully");
-    onSaved(id);
+      const next: Patient = {
+        id,
+        fullName: fullName.trim(),
+        dob,
+        sex,
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        address: address.trim() || undefined,
+        allergies,
+        medications: meds,
+        pastMedicalHistory: pmh.trim() || undefined,
+        comorbidities,
+        problemList: problems,
+        primaryDiagnosis: primaryDx.trim() || undefined,
+        tdi: tdi.trim() || undefined,
+        vitals: isNew ? vitalsEntry : initial?.vitals ?? [],
+        investigations: initial?.investigations ?? [],
+        attachments: initial?.attachments ?? [],
+        createdAt: initial?.createdAt ?? new Date().toISOString(),
+        lastAccessedAt: new Date().toISOString(),
+        nextFollowUp: initial?.nextFollowUp,
+      };
+      await upsertPatient(next);
+      toast.success("Patient saved successfully", { id: toastId });
+      onSaved(id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save patient", { id: toastId });
+      setSaving(false);
+    }
   };
 
   const addMed = () => setMeds([...meds, { id: uid("m"), drug: "", dose: "", frequency: "", duration: "" }]);
@@ -170,8 +179,10 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
       <div className="h-20 md:hidden" aria-hidden />
       <div className="fixed bottom-14 inset-x-0 md:relative md:bottom-auto md:inset-auto bg-card md:bg-transparent border-t md:border-0 p-3 md:p-0 flex gap-2 z-30 no-print shadow-[0_-2px_8px_rgba(0,0,0,0.05)] md:shadow-none">
 
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 md:flex-none">Cancel</Button>
-        <Button type="submit" className="flex-1 md:flex-none">Save patient</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1 md:flex-none">Cancel</Button>
+        <Button type="submit" disabled={saving} className="flex-1 md:flex-none">
+          {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{initial ? "Updating…" : "Saving patient…"}</> : "Save patient"}
+        </Button>
       </div>
     </form>
   );

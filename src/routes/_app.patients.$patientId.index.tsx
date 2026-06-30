@@ -161,7 +161,7 @@ function PatientRecord() {
                         <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); exportVisitPdf(p, v, { mode: "save", doctor }); }}><FileDown className="h-3 w-3" /></Button>
 
 
-                        <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.preventDefault(); if (confirm("Delete this visit?")) { deleteVisit(v.id); toast.success("Visit deleted"); } }}><Trash2 className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={async (e) => { e.preventDefault(); if (!confirm("Delete this visit?")) return; const tid = toast.loading("Deleting visit…"); try { await deleteVisit(v.id); toast.success("Visit deleted", { id: tid }); } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to delete", { id: tid }); } }}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </summary>
                     <div className="mt-3 space-y-3 text-sm border-t pt-3">
@@ -553,26 +553,35 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(patient.nextFollowUp?.slice(0, 10) ?? "");
   const [reason, setReason] = useState(patient.nextVisitReason ?? "");
+  const [saving, setSaving] = useState(false);
   const due = daysUntil(patient.nextFollowUp);
 
   const save = async () => {
-    if (!date) return;
-    const iso = new Date(date).toISOString();
-    upsertPatient({ ...patient, nextFollowUp: iso, nextVisitReason: reason || undefined });
-    toast.success("Next visit scheduled");
-    setOpen(false);
-    const ok = await createCalendarEvent({
-      patientName: patient.fullName,
-      patientId: patient.id,
-      date: iso,
-      time: "",
-      duration: 30,
-      notes: reason,
-    });
-    if (ok) toast.success("Follow-up added to Google Calendar");
+    if (!date || saving) return;
+    setSaving(true);
+    const toastId = toast.loading("Scheduling next visit…");
+    try {
+      const iso = new Date(date).toISOString();
+      await upsertPatient({ ...patient, nextFollowUp: iso, nextVisitReason: reason || undefined });
+      toast.loading("Syncing to Google Calendar…", { id: toastId });
+      await createCalendarEvent({
+        patientName: patient.fullName,
+        patientId: patient.id,
+        date: iso,
+        time: "",
+        duration: 30,
+        notes: reason,
+      });
+      toast.success("Next visit scheduled", { id: toastId });
+      setOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to schedule", { id: toastId });
+    } finally {
+      setSaving(false);
+    }
   };
-  const clear = () => {
-    upsertPatient({ ...patient, nextFollowUp: undefined, nextVisitReason: undefined });
+  const clear = async () => {
+    await upsertPatient({ ...patient, nextFollowUp: undefined, nextVisitReason: undefined });
     setDate(""); setReason("");
   };
 
@@ -594,8 +603,10 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
               <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Lab review, DAS28" />
             </div>
             <div className="flex gap-2">
-              <Button onClick={save} size="sm" className="flex-1">Save</Button>
-              {patient.nextFollowUp && <Button onClick={clear} variant="ghost" size="sm">Clear</Button>}
+              <Button onClick={save} size="sm" className="flex-1" disabled={saving || !date}>
+                {saving ? <><Loader2 className="h-3 w-3 mr-2 animate-spin" />Saving…</> : "Save"}
+              </Button>
+              {patient.nextFollowUp && <Button onClick={clear} variant="ghost" size="sm" disabled={saving}>Clear</Button>}
             </div>
           </PopoverContent>
         </Popover>
