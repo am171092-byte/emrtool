@@ -179,8 +179,10 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
       <div className="h-20 md:hidden" aria-hidden />
       <div className="fixed bottom-14 inset-x-0 md:relative md:bottom-auto md:inset-auto bg-card md:bg-transparent border-t md:border-0 p-3 md:p-0 flex gap-2 z-30 no-print shadow-[0_-2px_8px_rgba(0,0,0,0.05)] md:shadow-none">
 
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 md:flex-none">Cancel</Button>
-        <Button type="submit" className="flex-1 md:flex-none">Save patient</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1 md:flex-none">Cancel</Button>
+        <Button type="submit" disabled={saving} className="flex-1 md:flex-none">
+          {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{initial ? "Updating…" : "Saving patient…"}</> : "Save patient"}
+        </Button>
       </div>
     </form>
   );
