@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import type { Patient, Visit } from "./types";
+import type { Doctor, Patient, Visit } from "./types";
 import { calcAge } from "./format";
 
 // Layout constants (mm). A4 = 210 x 297mm.
@@ -12,18 +12,19 @@ const RIGHT = 10;          // 1 cm
 const CONTENT_W = PAGE_W - LEFT - RIGHT;
 
 // Spacing tokens (mm).
-const SECTION_GAP = 6;        // 6mm gap before each section header
-const HEADER_PAD_BELOW = 2;   // below header before content
-const INFO_GAP = 4;           // below patient info block
-const MIN_SECTION_SPACE = 25; // require >=25mm before starting a new section
-const TABLE_GAP_BELOW_HEADER = 4; // 4mm between section header and table
+const SECTION_GAP = 6;
+const HEADER_PAD_BELOW = 2;
+const INFO_GAP = 5;
+const MIN_SECTION_SPACE = 25;
+const TABLE_GAP_BELOW_HEADER = 4;
+const SIGNATURE_GAP = 30; // 3cm blank space above the doctor's name
 const BODY_SIZE = 10;
 const HEADER_SIZE = 11;
-const FONT = "helvetica"; // clean sans-serif bundled with jsPDF
+const FONT = "helvetica";
 
-type RenderOpts = { mode: "save" | "print" };
+type RenderOpts = { mode: "save" | "print"; doctor?: Doctor | null };
 
-function buildVisitPdf(p: Patient, v: Visit): jsPDF {
+function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   let y = TOP_MARGIN;
   let firstSection = true;
@@ -57,7 +58,6 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
 
   const sectionTitle = (label: string) => {
     if (!firstSection) y += SECTION_GAP;
-    // Keep header with at least some content: require min space available.
     const remaining = PAGE_H - BOTTOM_MARGIN - y;
     if (remaining < MIN_SECTION_SPACE) {
       doc.addPage();
@@ -68,11 +68,7 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
     doc.setFontSize(HEADER_SIZE);
     doc.setTextColor(20);
     doc.text(label, LEFT, y);
-    y += HEADER_SIZE * 0.42 + 0.6;
-    doc.setDrawColor(190);
-    doc.setLineWidth(0.18);
-    doc.line(LEFT, y, PAGE_W - RIGHT, y);
-    y += HEADER_PAD_BELOW;
+    y += HEADER_SIZE * 0.42 + HEADER_PAD_BELOW;
   };
 
   const sectionBody = (label: string, body?: string | null) => {
@@ -81,7 +77,6 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
     writeText(body.trim(), { size: BODY_SIZE });
   };
 
-  // Compact list: comma-joined if ≤3 items, bulleted if more.
   const sectionList = (label: string, items?: string[]) => {
     const list = (items ?? []).map((s) => String(s).trim()).filter(Boolean);
     if (list.length === 0) return;
@@ -93,7 +88,7 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
     }
   };
 
-  // ---------- Patient header (single-line layout) ----------
+  // ---------- Patient header (single-line, no separator line) ----------
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   doc.setTextColor(20);
@@ -107,32 +102,19 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
   const meta = `  ·  ${calcAge(p.dob)} y  ·  ${p.sex}`;
   doc.text(meta, LEFT + nameW, y);
 
-  // Right-aligned visit date
   doc.setFont(FONT, "bold");
   doc.setFontSize(10);
   doc.setTextColor(20);
   const dateTxt = `Visit: ${new Date(v.date).toLocaleDateString()}${v.time ? "  " + v.time : ""}`;
   const dateW = doc.getTextWidth(dateTxt);
   doc.text(dateTxt, PAGE_W - RIGHT - dateW, y);
-  y += 3.2;
-
-  // subtle bottom border under info block
-  doc.setDrawColor(170);
-  doc.setLineWidth(0.25);
-  doc.line(LEFT, y, PAGE_W - RIGHT, y);
   y += INFO_GAP;
   doc.setTextColor(20);
 
-  // ---------- Patient context ----------
+  // ---------- Patient context (no Current Medications) ----------
   sectionList("Current Issues", p.problemList ?? []);
   sectionList("Comorbidities", (p.comorbidities ?? []) as string[]);
   sectionList("Allergies", (p.allergies ?? []) as string[]);
-
-  const meds = p.medications ?? [];
-  if (meds.length > 0) {
-    sectionTitle("Current Medications");
-    meds.forEach((m) => renderRxLine(doc, m, ensureSpace, () => y, (ny) => { y = ny; }));
-  }
 
   // ---------- Visit clinical content ----------
   const cc =
@@ -150,7 +132,6 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
   sectionBody("Impression", v.soap?.impression || v.soap?.assessment);
   sectionBody("Plan", v.soap?.plan);
 
-  // ---------- Prescriptions table ----------
   if (v.prescriptions && v.prescriptions.length > 0) {
     sectionTitle("Prescriptions");
     y += TABLE_GAP_BELOW_HEADER;
@@ -175,18 +156,14 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
     const crp = v.das28.scoreCrp != null ? v.das28.scoreCrp.toFixed(2) : null;
     const score = esr ? `ESR ${esr}` : crp ? `CRP ${crp}` : "—";
     const activity = v.das28.activity ? `  ·  ${v.das28.activity}` : "";
-    writeText(
-      `${score}${activity}  ·  TJC ${v.das28.tjc}  ·  SJC ${v.das28.sjc}`,
-      { size: BODY_SIZE },
-    );
+    writeText(`${score}${activity}  ·  TJC ${v.das28.tjc}  ·  SJC ${v.das28.sjc}`, { size: BODY_SIZE });
   }
 
   const vit = v.vitals;
   if (vit && Object.values(vit).some((x) => x != null && x !== "")) {
     sectionTitle("Vitals");
     const parts: string[] = [];
-    if (vit.bpSystolic && vit.bpDiastolic)
-      parts.push(`BP ${vit.bpSystolic}/${vit.bpDiastolic} mmHg`);
+    if (vit.bpSystolic && vit.bpDiastolic) parts.push(`BP ${vit.bpSystolic}/${vit.bpDiastolic} mmHg`);
     if (vit.hr != null) parts.push(`HR ${vit.hr} bpm`);
     if (vit.respiratoryRate != null) parts.push(`RR ${vit.respiratoryRate} /min`);
     if (vit.temperature != null) parts.push(`Temp ${vit.temperature} °F`);
@@ -204,60 +181,62 @@ function buildVisitPdf(p: Patient, v: Visit): jsPDF {
     writeText(bits.join("  —  "), { size: BODY_SIZE });
   }
 
+  // ---------- Signature block (right-aligned, bottom of last page) ----------
+  renderSignature(doc, doctor, () => y, (ny) => { y = ny; });
+
   return doc;
 }
 
-// Render a single Rx line with bold drug name and regular metadata.
-function renderRxLine(
+function renderSignature(
   doc: jsPDF,
-  m: { drug?: string; dose?: string; frequency?: string; duration?: string; notes?: string; instructions?: string },
-  ensureSpace: (h: number) => void,
+  doctor: Doctor | null | undefined,
   getY: () => number,
   setY: (n: number) => void,
 ) {
-  const size = BODY_SIZE;
-  const lineH = size * 0.45;
-  ensureSpace(lineH);
+  if (!doctor || !doctor.name) return;
+
+  const nameSize = 11;
+  const subSize = 9;
+  const nameLineH = nameSize * 0.45;
+  const subLineH = subSize * 0.45;
+  const lines: { text: string; bold: boolean; size: number; h: number }[] = [
+    { text: doctor.name, bold: true, size: nameSize, h: nameLineH },
+  ];
+  if (doctor.registrationNo) {
+    lines.push({ text: `Reg. No: ${doctor.registrationNo}`, bold: false, size: subSize, h: subLineH });
+  }
+  if (doctor.clinicName) {
+    lines.push({ text: doctor.clinicName, bold: false, size: subSize, h: subLineH });
+  }
+  const blockH = SIGNATURE_GAP + lines.reduce((s, l) => s + l.h, 0);
+
   let y = getY();
-  const x = LEFT + 2;
-  const drug = (m.drug || "").trim() || "—";
-  doc.setFont(FONT, "bold");
-  doc.setFontSize(size);
-  doc.setTextColor(20);
-  doc.text(`•  ${drug}`, x, y);
-  const wBold = doc.getTextWidth(`•  ${drug}`);
+  const remaining = PAGE_H - BOTTOM_MARGIN - y;
 
-  const rest: string[] = [];
-  if (m.dose) rest.push(m.dose);
-  if (m.frequency) rest.push(m.frequency);
-  if (m.duration) rest.push(m.duration);
-  const notes = m.notes || m.instructions;
-  let trail = "";
-  if (rest.length) trail += "  ·  " + rest.join("  ·  ");
-  if (notes) trail += "  —  " + notes;
+  // Anchor to bottom if it fits on current page; otherwise start a new page and anchor there.
+  if (remaining < blockH) {
+    doc.addPage();
+    y = TOP_MARGIN;
+  }
+  // Push to just above bottom margin
+  const blockTop = PAGE_H - BOTTOM_MARGIN - blockH;
+  if (blockTop > y) y = blockTop;
 
-  if (trail) {
-    doc.setFont(FONT, "normal");
-    doc.setTextColor(45);
-    const remaining = CONTENT_W - wBold - 2;
-    const wrapped = doc.splitTextToSize(trail, remaining);
-    doc.text(wrapped[0], x + wBold, y);
-    y += lineH;
-    if (wrapped.length > 1) {
-      for (let i = 1; i < wrapped.length; i++) {
-        ensureSpace(lineH);
-        doc.text(wrapped[i], x + 4, y);
-        y += lineH;
-      }
-    }
-  } else {
-    y += lineH;
+  // 3cm blank space for physical signature
+  y += SIGNATURE_GAP;
+
+  for (const ln of lines) {
+    doc.setFont(FONT, ln.bold ? "bold" : "normal");
+    doc.setFontSize(ln.size);
+    doc.setTextColor(ln.bold ? 20 : 60);
+    const w = doc.getTextWidth(ln.text);
+    doc.text(ln.text, PAGE_W - RIGHT - w, y);
+    y += ln.h;
   }
   doc.setTextColor(20);
   setY(y);
 }
 
-// Compact prescription table with alternating row backgrounds.
 function renderPrescriptionTable(
   doc: jsPDF,
   rxs: Array<{ drug?: string; dose?: string; frequency?: string; duration?: string; notes?: string; instructions?: string }>,
@@ -266,11 +245,10 @@ function renderPrescriptionTable(
   ensureSpace: (h: number) => void,
 ) {
   const headers = ["Drug", "Dose", "Frequency", "Duration", "Notes"];
-  // Column widths as percentages of CONTENT_W: 35 / 15 / 20 / 15 / 15
   const pct = [0.35, 0.15, 0.20, 0.15, 0.15];
   const cols = pct.map((p) => p * CONTENT_W);
-  const padX = 2.5;   // ~8px horizontal cell padding
-  const padY = 2.2;   // ~6-8px vertical cell padding
+  const padX = 2.5;
+  const padY = 2.2;
   const size = BODY_SIZE;
   const lineH = size * 0.45;
 
@@ -282,7 +260,7 @@ function renderPrescriptionTable(
 
   const drawRow = (
     cells: string[],
-    opts: { bold?: boolean; fill?: [number, number, number] | null; borderColor: number; borderWidth: number },
+    opts: { bold?: boolean; fill?: [number, number, number] | null },
   ) => {
     const wrapped = cells.map((txt, i) =>
       doc.splitTextToSize(String(txt || ""), cols[i] - padX * 2),
@@ -303,24 +281,15 @@ function renderPrescriptionTable(
 
     wrapped.forEach((lines: string[], i: number) => {
       lines.forEach((ln: string, li: number) => {
-        // baseline of line `li` inside the cell (top-aligned with padY)
         const baseline = y + padY + lineH * (li + 1) - lineH * 0.25;
         doc.text(ln, colX(i) + padX, baseline);
       });
     });
 
-    // bottom border
-    doc.setDrawColor(opts.borderColor);
-    doc.setLineWidth(opts.borderWidth);
-    doc.line(LEFT, y + rowH, PAGE_W - RIGHT, y + rowH);
-
     setY(y + rowH);
   };
 
-  // Header row: bold, light gray bg, 1px solid #ccc bottom border
-  drawRow(headers, { bold: true, fill: [240, 240, 240], borderColor: 204, borderWidth: 0.35 });
-
-  // Data rows: white bg, 0.5px solid #e0e0e0 bottom border
+  drawRow(headers, { bold: true, fill: [240, 240, 240] });
   rxs.forEach((r) => {
     drawRow(
       [
@@ -330,7 +299,7 @@ function renderPrescriptionTable(
         r.duration || "",
         r.notes || r.instructions || "",
       ],
-      { fill: [255, 255, 255], borderColor: 224, borderWidth: 0.18 },
+      { fill: null },
     );
   });
 
@@ -338,21 +307,19 @@ function renderPrescriptionTable(
 }
 
 export function exportVisitPdf(p: Patient, v: Visit, opts: RenderOpts = { mode: "save" }) {
-  const doc = buildVisitPdf(p, v);
+  const doc = buildVisitPdf(p, v, opts.doctor);
   if (opts.mode === "print") {
     doc.autoPrint();
     const url = doc.output("bloburl");
     const w = window.open(url, "_blank");
-    if (!w) {
-      doc.save(filename(p, v));
-    }
+    if (!w) doc.save(filename(p, v));
     return;
   }
   doc.save(filename(p, v));
 }
 
-export function printVisitPdf(p: Patient, v: Visit) {
-  exportVisitPdf(p, v, { mode: "print" });
+export function printVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null) {
+  exportVisitPdf(p, v, { mode: "print", doctor });
 }
 
 function filename(p: Patient, v: Visit) {
