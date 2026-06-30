@@ -23,17 +23,25 @@ export function DAS28Panel({ patient }: { patient: Patient }) {
 
   const history = patient.das28History ?? [];
 
-  const save = () => {
-    if (!snap) return;
-    const entry: DAS28Entry = {
-      id: uid("das"),
-      date: new Date().toISOString(),
-      ...snap,
-      joints: list,
-    };
-    upsertPatient({ ...patient, das28History: [entry, ...history] });
-    toast.success("DAS28 saved to patient record");
-    setStates({});
+  const save = async () => {
+    if (!snap || saving) return;
+    setSaving(true);
+    const tid = toast.loading("Saving DAS28…");
+    try {
+      const entry: DAS28Entry = {
+        id: uid("das"),
+        date: new Date().toISOString(),
+        ...snap,
+        joints: list,
+      };
+      await upsertPatient({ ...patient, das28History: [entry, ...history] });
+      toast.success("DAS28 saved to patient record", { id: tid });
+      setStates({});
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save DAS28", { id: tid });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = (id: string) => {
