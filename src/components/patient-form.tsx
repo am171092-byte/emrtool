@@ -9,7 +9,7 @@ import { TagInput } from "@/components/tag-input";
 import { upsertPatient, uid } from "@/lib/api-store";
 import { calcAge, bmi } from "@/lib/format";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 
 interface Props {
   initial?: Patient;
