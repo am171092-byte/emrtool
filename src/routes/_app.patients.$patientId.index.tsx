@@ -22,6 +22,7 @@ import { daysUntil } from "@/lib/format";
 import { ReportUploadDialog } from "@/components/report-upload-dialog";
 import { LabExtractDialog } from "@/components/lab-extract-dialog";
 import { createCalendarEvent } from "@/lib/calendar-service";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
@@ -33,6 +34,7 @@ function PatientRecord() {
   const p = usePatient(patientId);
   const visits = useVisitsForPatient(patientId);
   const nav = useNavigate();
+  const { doctor } = useAuth();
   const [editingMeds, setEditingMeds] = useState(false);
 
   useEffect(() => {
@@ -155,8 +157,9 @@ function PatientRecord() {
                       </div>
                       <div className="flex gap-1 no-print">
                         <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); nav({ to: "/patients/$patientId/visits/$visitId/edit", params: { patientId, visitId: v.id } }); }}>Edit</Button>
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); printVisitPdf(p, v); }}><Printer className="h-3 w-3" /></Button>
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); exportVisitPdf(p, v); }}><FileDown className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); printVisitPdf(p, v, doctor); }}><Printer className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.preventDefault(); exportVisitPdf(p, v, { mode: "save", doctor }); }}><FileDown className="h-3 w-3" /></Button>
+
 
                         <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.preventDefault(); if (confirm("Delete this visit?")) { deleteVisit(v.id); toast.success("Visit deleted"); } }}><Trash2 className="h-3 w-3" /></Button>
                       </div>
