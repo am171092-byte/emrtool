@@ -58,6 +58,11 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen w-full flex bg-surface text-foreground">
+      {isNavigating && (
+        <div className="fixed top-0 inset-x-0 z-[100] h-0.5 bg-primary/20 overflow-hidden no-print pointer-events-none">
+          <div className="h-full w-1/3 bg-primary animate-[routeloader_1s_ease-in-out_infinite]" />
+        </div>
+      )}
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-[260px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
         <div className="flex items-center gap-2 px-5 py-5 border-b border-sidebar-border">
