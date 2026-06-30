@@ -175,22 +175,9 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
 
   if (v.nextFollowUp || v.followUpNote) {
     sectionTitle("Next Follow-up");
-    if (v.nextFollowUp) {
-      const dateStr = new Date(v.nextFollowUp).toLocaleDateString();
-      // Inline: bold "Date:" then value
-      const lineH = BODY_SIZE * 0.42;
-      ensureSpace(lineH);
-      doc.setFont(FONT, "bold");
-      doc.setFontSize(BODY_SIZE);
-      doc.setTextColor(20);
-      doc.text("Date:", LEFT, y);
-      const labelW = doc.getTextWidth("Date: ");
-      doc.setFont(FONT, "normal");
-      doc.text(dateStr, LEFT + labelW, y);
-      y += lineH;
-    }
+    const lineH = BODY_SIZE * 0.42;
+
     if (v.followUpNote && v.followUpNote.trim()) {
-      const lineH = BODY_SIZE * 0.42;
       ensureSpace(lineH);
       doc.setFont(FONT, "bold");
       doc.setFontSize(BODY_SIZE);
@@ -207,7 +194,21 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
         y += lineH;
       }
     }
+
+    if (v.nextFollowUp) {
+      const dateStr = new Date(v.nextFollowUp).toLocaleDateString();
+      ensureSpace(lineH);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(BODY_SIZE);
+      doc.setTextColor(20);
+      doc.text("Next Follow-up:", LEFT, y);
+      const labelW = doc.getTextWidth("Next Follow-up: ");
+      doc.setFont(FONT, "normal");
+      doc.text(dateStr, LEFT + labelW, y);
+      y += lineH;
+    }
   }
+
 
   // ---------- Signature block (right-aligned, bottom of last page) ----------
   renderSignature(doc, doctor, () => y, (ny) => { y = ny; });
