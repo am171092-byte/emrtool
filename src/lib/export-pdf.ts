@@ -175,10 +175,38 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
 
   if (v.nextFollowUp || v.followUpNote) {
     sectionTitle("Next Follow-up");
-    const bits: string[] = [];
-    if (v.nextFollowUp) bits.push(new Date(v.nextFollowUp).toLocaleDateString());
-    if (v.followUpNote) bits.push(v.followUpNote);
-    writeText(bits.join("  —  "), { size: BODY_SIZE });
+    if (v.nextFollowUp) {
+      const dateStr = new Date(v.nextFollowUp).toLocaleDateString();
+      // Inline: bold "Date:" then value
+      const lineH = BODY_SIZE * 0.42;
+      ensureSpace(lineH);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(BODY_SIZE);
+      doc.setTextColor(20);
+      doc.text("Date:", LEFT, y);
+      const labelW = doc.getTextWidth("Date: ");
+      doc.setFont(FONT, "normal");
+      doc.text(dateStr, LEFT + labelW, y);
+      y += lineH;
+    }
+    if (v.followUpNote && v.followUpNote.trim()) {
+      const lineH = BODY_SIZE * 0.42;
+      ensureSpace(lineH);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(BODY_SIZE);
+      doc.setTextColor(20);
+      doc.text("Advice:", LEFT, y);
+      const labelW = doc.getTextWidth("Advice: ");
+      doc.setFont(FONT, "normal");
+      const wrapped = doc.splitTextToSize(v.followUpNote.trim(), CONTENT_W - labelW);
+      doc.text(wrapped[0] ?? "", LEFT + labelW, y);
+      y += lineH;
+      for (let i = 1; i < wrapped.length; i++) {
+        ensureSpace(lineH);
+        doc.text(wrapped[i], LEFT, y);
+        y += lineH;
+      }
+    }
   }
 
   // ---------- Signature block (right-aligned, bottom of last page) ----------
