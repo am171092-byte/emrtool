@@ -36,18 +36,21 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     return getVisitsForPatient(patient.id)[0];
   }, [visit, patient.id]);
 
-  const [date, setDate] = useState(visit?.date.slice(0, 10) ?? todayIso);
+  const soap = (visit?.soap ?? {}) as NonNullable<Visit["soap"]> & {
+    subjective?: string; objective?: string; assessment?: string;
+  };
+  const [date, setDate] = useState(visit?.date?.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
   const [chiefComplaints, setChiefComplaints] = useState<string[]>(
     visit?.chiefComplaints && visit.chiefComplaints.length > 0
       ? visit.chiefComplaints
       : (visit?.chiefComplaint ? [visit.chiefComplaint] : [])
   );
-  const [hpi, setHpi] = useState(visit?.soap.historyOfPresentingIllness ?? visit?.soap.subjective ?? "");
-  const [currentVisit, setCurrentVisit] = useState(visit?.soap.currentVisit ?? "");
-  const [examination, setExamination] = useState(visit?.soap.examination ?? visit?.soap.objective ?? "");
-  const [impression, setImpression] = useState(visit?.soap.impression ?? visit?.soap.assessment ?? "");
-  const [plan, setPlan] = useState(visit?.soap.plan ?? "");
+  const [hpi, setHpi] = useState(soap.historyOfPresentingIllness ?? soap.subjective ?? "");
+  const [currentVisit, setCurrentVisit] = useState(soap.currentVisit ?? "");
+  const [examination, setExamination] = useState(soap.examination ?? soap.objective ?? "");
+  const [impression, setImpression] = useState(soap.impression ?? soap.assessment ?? "");
+  const [plan, setPlan] = useState(soap.plan ?? "");
 
   const prefVitals = visit?.vitals ?? lastVisit?.vitals ?? patient.vitals?.[0];
   const [bpS, setBpS] = useState<number | "">(prefVitals?.bpSystolic ?? "");
@@ -67,7 +70,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [enableDas28, setEnableDas28] = useState(!!visit?.das28);
   const [jointStates, setJointStates] = useState<Record<string, JointState>>(() => {
     const obj: Record<string, JointState> = {};
-    visit?.jointMap?.joints.forEach((j) => { obj[j.id] = j; });
+    (visit?.jointMap?.joints ?? []).forEach((j) => { obj[j.id] = j; });
     return obj;
   });
   const [jointMode, setJointMode] = useState<Mode>("tender");
