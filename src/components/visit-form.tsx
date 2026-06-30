@@ -92,60 +92,67 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (chiefComplaints.length === 0) { toast.error("At least one chief complaint is required"); return; }
-    const id = visit?.id ?? uid("vis");
-    const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
-    const next: Visit = {
-      id, patientId: patient.id,
-      date: new Date(date).toISOString(),
-      time,
-      chiefComplaints,
-      chiefComplaint: chiefComplaints.join(", "),
-      soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
-      vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
-      prescriptions,
-      investigations,
-      investigationNotes: investigationNotes || undefined,
-      nextFollowUp: nextFollowUpIso,
-      followUpNote: followUpNote || undefined,
-      jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
-      das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
-    };
-    await upsertVisit(next);
+    setSaving(true);
+    const toastId = toast.loading("Saving visit…");
+    try {
+      const id = visit?.id ?? uid("vis");
+      const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
+      const next: Visit = {
+        id, patientId: patient.id,
+        date: new Date(date).toISOString(),
+        time,
+        chiefComplaints,
+        chiefComplaint: chiefComplaints.join(", "),
+        soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
+        vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
+        prescriptions,
+        investigations,
+        investigationNotes: investigationNotes || undefined,
+        nextFollowUp: nextFollowUpIso,
+        followUpNote: followUpNote || undefined,
+        jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
+        das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
+      };
+      await upsertVisit(next);
 
-    // Replace patient's current medications with this visit's prescriptions
-    const newMeds = prescriptions
-      .filter((p) => p.drug && p.drug.trim())
-      .map((p) => ({
-        id: uid("med"),
-        drug: p.drug,
-        dose: p.dose ?? "",
-        frequency: p.frequency ?? "",
-        duration: p.duration ?? "",
-      }));
-    const patientPatch = {
-      ...patient,
-      medications: newMeds,
-      ...(nextFollowUpIso ? { nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined } : {}),
-    };
-    await upsertPatient(patientPatch);
-    setDirty(false);
-    toast.success("Visit saved");
-    toast.success("Current medications updated from visit prescriptions");
+      toast.loading("Updating patient record…", { id: toastId });
+      const newMeds = prescriptions
+        .filter((p) => p.drug && p.drug.trim())
+        .map((p) => ({
+          id: uid("med"),
+          drug: p.drug,
+          dose: p.dose ?? "",
+          frequency: p.frequency ?? "",
+          duration: p.duration ?? "",
+        }));
+      const patientPatch = {
+        ...patient,
+        medications: newMeds,
+        ...(nextFollowUpIso ? { nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined } : {}),
+      };
+      await upsertPatient(patientPatch);
+      setDirty(false);
 
-    const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
-    if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
-      const ok = await createCalendarEvent({
-        patientName: patient.fullName,
-        patientId: patient.id,
-        date: nextFollowUpIso,
-        time: "",
-        duration: 30,
-        notes: followUpNote,
-      });
-      if (ok) toast.success("Follow-up added to Google Calendar");
+      const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
+      if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
+        toast.loading("Syncing calendar…", { id: toastId });
+        await createCalendarEvent({
+          patientName: patient.fullName,
+          patientId: patient.id,
+          date: nextFollowUpIso,
+          time: "",
+          duration: 30,
+          notes: followUpNote,
+        });
+      }
+      toast.success("Visit saved successfully", { id: toastId });
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save visit", { id: toastId });
+      setSaving(false);
     }
-    onSaved();
   };
 
   const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "", notes: "" }]);
