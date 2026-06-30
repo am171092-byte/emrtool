@@ -15,6 +15,7 @@ export function DAS28Panel({ patient }: { patient: Patient }) {
   const [mode, setMode] = useState<Mode>("tender");
   const [states, setStates] = useState<Record<string, JointState>>({});
   const [snap, setSnap] = useState<DAS28Snapshot | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const list = Object.values(states).filter((j) => j.tender || j.swollen || j.note);
   const tjc = list.filter((j) => j.tender).length;
