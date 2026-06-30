@@ -23,17 +23,30 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+function ensureArray<T = unknown>(val: unknown): T[] {
+  if (Array.isArray(val)) return val as T[];
+  if (typeof val === "string" && val.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function normalizePatient(p: Patient): Patient {
   return {
     ...p,
-    allergies: p.allergies ?? [],
-    medications: p.medications ?? [],
-    comorbidities: p.comorbidities ?? [],
-    problemList: p.problemList ?? [],
-    vitals: p.vitals ?? [],
-    investigations: p.investigations ?? [],
-    attachments: p.attachments ?? [],
-    das28History: p.das28History ?? [],
+    allergies: ensureArray(p.allergies) as Patient["allergies"],
+    medications: ensureArray(p.medications) as Patient["medications"],
+    comorbidities: ensureArray(p.comorbidities) as Patient["comorbidities"],
+    problemList: ensureArray(p.problemList) as Patient["problemList"],
+    vitals: ensureArray(p.vitals) as Patient["vitals"],
+    investigations: ensureArray(p.investigations) as Patient["investigations"],
+    attachments: ensureArray(p.attachments) as Patient["attachments"],
+    das28History: ensureArray(p.das28History) as Patient["das28History"],
   };
 }
 
@@ -42,12 +55,14 @@ function normalizeVisit(v: Visit): Visit {
   const anyV: any = v;
   const chiefComplaints: string[] = Array.isArray(anyV.chiefComplaints)
     ? anyV.chiefComplaints
-    : (anyV.chiefComplaint ? [anyV.chiefComplaint] : []);
+    : (typeof anyV.chiefComplaints === "string" && anyV.chiefComplaints.trim().startsWith("[")
+        ? (ensureArray<string>(anyV.chiefComplaints))
+        : (anyV.chiefComplaint ? [anyV.chiefComplaint] : []));
   return {
     ...v,
     chiefComplaints,
-    prescriptions: v.prescriptions ?? [],
-    investigations: v.investigations ?? [],
+    prescriptions: ensureArray(v.prescriptions) as Visit["prescriptions"],
+    investigations: ensureArray(v.investigations) as Visit["investigations"],
     soap: {
       historyOfPresentingIllness: s.historyOfPresentingIllness ?? s.subjective ?? "",
       currentVisit: s.currentVisit ?? "",
