@@ -42,6 +42,7 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
   const [respRate, setRespRate] = useState<number | "">("");
+  const [saving, setSaving] = useState(false);
 
   const calcBmi = useMemo(() => bmi(typeof weight === "number" ? weight : undefined, typeof height === "number" ? height : undefined), [weight, height]);
   const age = dob ? calcAge(dob) : null;
