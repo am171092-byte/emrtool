@@ -375,9 +375,27 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
 
             <Card className="p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="font-semibold">Investigations ordered</h2>
-                <Button type="button" variant="outline" size="sm" onClick={addInv}><Plus className="h-3 w-3 mr-1" />Add</Button>
+                <div className="flex gap-2 flex-wrap">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" disabled={invTemplates.length === 0}>
+                        <FileText className="h-3 w-3 mr-1" />Load Template
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {invTemplates.length === 0 ? (
+                        <DropdownMenuItem disabled>No investigation templates</DropdownMenuItem>
+                      ) : invTemplates.map((t) => (
+                        <DropdownMenuItem key={t.id} onSelect={() => loadInvTemplate(t)}>
+                          {t.name || "(untitled)"} · <span className="text-muted-foreground ml-1">{t.items.length}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button type="button" variant="outline" size="sm" onClick={addInv}><Plus className="h-3 w-3 mr-1" />Add</Button>
+                </div>
               </div>
               <div className="space-y-2 mt-3">
                 {investigations.length === 0 && <div className="text-xs text-muted-foreground">None.</div>}
