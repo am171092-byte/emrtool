@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import type { Doctor, Patient, Visit } from "./types";
 import { calcAge } from "./format";
+import { formatTdiDuration, formatTdiStartLabel } from "./tdi";
 
 // Layout constants (mm). A4 = 210 x 297mm.
 const PAGE_W = 210;
@@ -119,6 +120,20 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
   doc.text(dateTxt, PAGE_W - RIGHT - dateW, y);
   y += INFO_GAP;
   doc.setTextColor(20);
+
+  // TDI line (if set)
+  const tdiText = p.tdiStartDate
+    ? `TDI: ${formatTdiDuration(p.tdiStartDate)} (since ${formatTdiStartLabel(p.tdiStartDate)})`
+    : (p.tdi ? `TDI: ${p.tdi}` : "");
+  if (tdiText) {
+    doc.setFont(FONT, "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(70);
+    ensureSpace(4);
+    doc.text(tdiText, LEFT, y);
+    y += INFO_GAP - 1;
+    doc.setTextColor(20);
+  }
 
   // ---------- Patient context (no Current Medications) ----------
   sectionList("Current Issues", p.problemList ?? []);

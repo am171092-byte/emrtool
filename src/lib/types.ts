@@ -135,6 +135,8 @@ export interface Patient {
   attachments: Attachment[];
   primaryDiagnosis?: string;
   tdi?: string;
+  /** ISO date (first-of-month) marking start of illness. Preferred over `tdi`. */
+  tdiStartDate?: string;
   createdAt: string;
   lastAccessedAt?: string;
   nextFollowUp?: string;

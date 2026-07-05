@@ -24,6 +24,7 @@ import { LabExtractDialog } from "@/components/lab-extract-dialog";
 import { createCalendarEvent } from "@/lib/calendar-service";
 import { useAuth } from "@/lib/auth-context";
 import { computeFlag, statusFromFlag } from "@/lib/lab-flag";
+import { formatTdiDuration, formatTdiStartLabel } from "@/lib/tdi";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
@@ -67,10 +68,20 @@ function PatientRecord() {
               <Button variant="ghost" size="icon" onClick={() => nav({ to: "/patients/$patientId/edit", params: { patientId } })} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
             </div>
             {p.primaryDiagnosis && <Badge className="mt-3" variant="secondary">{p.primaryDiagnosis}</Badge>}
-            {p.tdi && (
+            {(p.tdiStartDate || p.tdi) && (
               <div className="mt-2 rounded-md bg-primary/5 border border-primary/15 px-3 py-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total Duration of Illness</div>
-                <div className="text-sm font-medium">{p.tdi}</div>
+                {p.tdiStartDate ? (
+                  <div className="text-sm font-medium">
+                    {formatTdiDuration(p.tdiStartDate)}
+                    <span className="text-muted-foreground font-normal"> (since {formatTdiStartLabel(p.tdiStartDate)})</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm font-medium">{p.tdi}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">Update to auto-calculate</div>
+                  </>
+                )}
               </div>
             )}
           </Card>
