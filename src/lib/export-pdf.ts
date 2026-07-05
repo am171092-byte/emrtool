@@ -68,10 +68,9 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
 
   const sectionTitle = (label: string) => {
     if (!firstSection) y += SECTION_GAP;
-    const remaining = PAGE_H - BOTTOM_MARGIN - y;
+    const remaining = PAGE_H - pageBottom() - y;
     if (remaining < MIN_SECTION_SPACE) {
-      doc.addPage();
-      y = TOP_MARGIN;
+      addNewPage();
     }
     firstSection = false;
     doc.setFont(FONT, "bold");
