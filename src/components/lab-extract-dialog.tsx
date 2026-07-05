@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { Patient } from "@/lib/types";
 import { uid, addAttachment, upsertPatient } from "@/lib/api-store";
 import { getAuthToken } from "@/lib/auth-context";
+import { computeFlag, statusFromFlag as sharedStatusFromFlag } from "@/lib/lab-flag";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
