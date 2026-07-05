@@ -160,9 +160,7 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
         mimeType: file.type,
         base64Data: base64,
       });
-      const reportDateIso = result.reportDate
-        ? new Date(result.reportDate).toISOString()
-        : new Date().toISOString();
+      const reportDateIso = parseReportDate(result.reportDate);
       const newRows = picks.map((v) => {
         const derived = computeFlag(v.value, v.referenceRange);
         const effectiveFlag = derived || v.flag;
