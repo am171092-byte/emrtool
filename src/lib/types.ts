@@ -142,6 +142,12 @@ export interface Patient {
   das28History?: DAS28Entry[];
 }
 
+export interface SpecialNote {
+  id: string;
+  date: string;
+  text: string;
+}
+
 export interface DAS28Entry extends DAS28Data {
   id: string;
   date: string;
