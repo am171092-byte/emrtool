@@ -92,6 +92,9 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
         problemList: problems,
         primaryDiagnosis: primaryDx.trim() || undefined,
         tdi: tdi.trim() || undefined,
+        tdiStartDate: (typeof tdiYear === "number" && typeof tdiMonth === "number")
+          ? buildTdiStart(tdiYear, tdiMonth)
+          : initial?.tdiStartDate,
         vitals: isNew ? vitalsEntry : initial?.vitals ?? [],
         investigations: initial?.investigations ?? [],
         attachments: initial?.attachments ?? [],
