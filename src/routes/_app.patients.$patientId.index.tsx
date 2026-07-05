@@ -400,10 +400,15 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
 }
 
 
+type DraftRow = { rid: string; testName: string; result: string; units: string; referenceRange: string };
+const emptyRow = (): DraftRow => ({ rid: uid("row"), testName: "", result: "", units: "", referenceRange: "" });
+
 function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   const [open, setOpen] = useState(false);
   const today = () => new Date().toISOString().slice(0, 10);
-  const [draft, setDraft] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
+  const [batchDate, setBatchDate] = useState(today());
+  const [rows, setRows] = useState<DraftRow[]>([emptyRow()]);
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edit, setEdit] = useState({ testName: "", result: "", units: "", referenceRange: "", status: "Normal" as "Normal" | "Abnormal" | "Critical", date: today() });
   const [extractFile, setExtractFile] = useState<File | null>(null);
@@ -415,15 +420,48 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
 
   if (!patient) return null;
 
-  const add = () => {
-    if (!draft.testName.trim()) return;
-    const { date, ...rest } = draft;
-    const flag = computeFlag(rest.result, rest.referenceRange);
-    const status = flag ? statusFromFlag(flag) : rest.status;
-    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date(date).toISOString(), ...rest, status }, ...patient.investigations] });
-    setDraft({ testName: "", result: "", units: "", referenceRange: "", status: "Normal", date: today() });
+  const updateRow = (rid: string, patch: Partial<DraftRow>) =>
+    setRows((rs) => rs.map((r) => (r.rid === rid ? { ...r, ...patch } : r)));
+  const removeDraftRow = (rid: string) =>
+    setRows((rs) => (rs.length <= 1 ? rs : rs.filter((r) => r.rid !== rid)));
+  const addAnother = () => setRows((rs) => (rs.length >= 20 ? rs : [...rs, emptyRow()]));
+
+  const resetForm = () => {
+    setRows([emptyRow()]);
+    setBatchDate(today());
     setOpen(false);
-    toast.success("Investigation added");
+  };
+
+  const saveAll = async () => {
+    const valid = rows.filter((r) => r.testName.trim());
+    if (valid.length === 0) {
+      toast.error("Add at least one test name");
+      return;
+    }
+    setSaving(true);
+    try {
+      const iso = new Date(batchDate).toISOString();
+      const newEntries = valid.map((r) => {
+        const flag = computeFlag(r.result, r.referenceRange);
+        const status = flag ? statusFromFlag(flag) : "Normal";
+        return {
+          id: uid("inv"),
+          date: iso,
+          testName: r.testName.trim(),
+          result: r.result || undefined,
+          units: r.units || undefined,
+          referenceRange: r.referenceRange || undefined,
+          status,
+        };
+      });
+      await upsertPatient({ ...patient, investigations: [...newEntries, ...patient.investigations] });
+      toast.success(`${newEntries.length} lab value${newEntries.length === 1 ? "" : "s"} saved`);
+      resetForm();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const startEdit = (row: typeof patient.investigations[number]) => {
@@ -469,17 +507,59 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
           <Upload className="h-3 w-3" /> Upload & Extract Lab Report
           <input type="file" className="hidden" accept="image/jpeg,image/png,image/jpg,application/pdf" onChange={onExtractFile} />
         </label>
-        <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add"}</Button>
+        <Button size="sm" onClick={() => setOpen(!open)}><Plus className="h-3 w-3 mr-1" />{open ? "Close" : "Add Lab Entry"}</Button>
       </div>
       <LabExtractDialog patient={patient} file={extractFile} onClose={() => setExtractFile(null)} />
       {open && (
-        <Card className="p-3 grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
-          <div><label className="text-xs text-muted-foreground">Date</label><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></div>
-          <div className="col-span-2"><label className="text-xs text-muted-foreground">Test</label><Input value={draft.testName} onChange={(e) => setDraft({ ...draft, testName: e.target.value })} /></div>
-          <div><label className="text-xs text-muted-foreground">Result</label><Input value={draft.result} onChange={(e) => setDraft({ ...draft, result: e.target.value })} /></div>
-          <div><label className="text-xs text-muted-foreground">Units</label><Input value={draft.units} onChange={(e) => setDraft({ ...draft, units: e.target.value })} /></div>
-          <div><label className="text-xs text-muted-foreground">Ref</label><Input value={draft.referenceRange} onChange={(e) => setDraft({ ...draft, referenceRange: e.target.value })} /></div>
-          <Button onClick={add}>Save</Button>
+        <Card className="p-3 space-y-3">
+          <div className="flex items-end gap-2 flex-wrap">
+            <div>
+              <label className="text-xs text-muted-foreground">Date (applies to all)</label>
+              <Input type="date" value={batchDate} onChange={(e) => setBatchDate(e.target.value)} className="w-40" />
+            </div>
+            <div className="text-xs text-muted-foreground ml-auto">{rows.length}/20 rows</div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="p-1 min-w-[180px]">Test name</th>
+                  <th className="p-1 min-w-[100px]">Value</th>
+                  <th className="p-1 min-w-[80px]">Unit</th>
+                  <th className="p-1 min-w-[120px]">Reference range</th>
+                  <th className="p-1 w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.rid} className="border-t">
+                    <td className="p-1"><Input className="h-8" value={r.testName} onChange={(e) => updateRow(r.rid, { testName: e.target.value })} placeholder="e.g. Hemoglobin" /></td>
+                    <td className="p-1"><Input className="h-8 font-mono" value={r.result} onChange={(e) => updateRow(r.rid, { result: e.target.value })} /></td>
+                    <td className="p-1"><Input className="h-8" value={r.units} onChange={(e) => updateRow(r.rid, { units: e.target.value })} placeholder="g/dL" /></td>
+                    <td className="p-1"><Input className="h-8" value={r.referenceRange} onChange={(e) => updateRow(r.rid, { referenceRange: e.target.value })} placeholder="11.5-15.0" /></td>
+                    <td className="p-1 text-right">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeDraftRow(r.rid)} disabled={rows.length <= 1} aria-label="Remove row">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={addAnother} disabled={rows.length >= 20}>
+              <Plus className="h-3 w-3 mr-1" /> Add Another
+            </Button>
+            <div className="ml-auto flex gap-2">
+              <Button size="sm" variant="ghost" onClick={resetForm} disabled={saving}>Cancel</Button>
+              <Button size="sm" onClick={saveAll} disabled={saving}>
+                {saving ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving…</> : "Save All"}
+              </Button>
+            </div>
+          </div>
         </Card>
       )}
       <Card className="overflow-x-auto">
