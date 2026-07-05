@@ -301,13 +301,20 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
               <div className="space-y-2 mt-3">
                 {prescriptions.length === 0 && <div className="text-xs text-muted-foreground">None.</div>}
                 {prescriptions.map((rx, i) => (
-                  <div key={rx.id} className="grid grid-cols-12 gap-1 items-center">
-                    <DrugAutocomplete className="col-span-12 md:col-span-3" value={rx.drug} onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, drug: v } : x))} />
-                    <Input className="col-span-4 md:col-span-2" placeholder="Dose" value={rx.dose} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, dose: e.target.value } : x))} />
-                    <Input className="col-span-4 md:col-span-2" placeholder="Freq" value={rx.frequency} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, frequency: e.target.value } : x))} />
-                    <Input className="col-span-3 md:col-span-2" placeholder="Duration" value={rx.duration} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, duration: e.target.value } : x))} />
-                    <Input className="col-span-11 md:col-span-2" placeholder="Notes (e.g. take with food)" value={rx.notes ?? ""} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, notes: e.target.value } : x))} />
-                    <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setPrescriptions(prescriptions.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
+                  <div key={rx.id} className="space-y-1">
+                    <div className="grid grid-cols-12 gap-1 items-center">
+                      <DrugAutocomplete className="col-span-12 md:col-span-3" value={rx.drug} onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, drug: v } : x))} />
+                      <Input className="col-span-4 md:col-span-2" placeholder="Dose" value={rx.dose} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, dose: e.target.value } : x))} />
+                      <Input className="col-span-4 md:col-span-2" placeholder="Freq" value={rx.frequency} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, frequency: e.target.value } : x))} />
+                      <Input className="col-span-4 md:col-span-2" placeholder="Duration" value={rx.duration} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, duration: e.target.value } : x))} />
+                      <div className="col-span-11 md:col-span-2">
+                        <PrescriptionNotesField
+                          value={rx.notes ?? ""}
+                          onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, notes: v } : x))}
+                        />
+                      </div>
+                      <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setPrescriptions(prescriptions.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
                   </div>
                 ))}
               </div>
