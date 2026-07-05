@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TagInput } from "@/components/tag-input";
 import { upsertPatient, uid } from "@/lib/api-store";
 import { calcAge, bmi } from "@/lib/format";
+import { parseTdiStart, buildTdiStart, formatTdiDuration, tdiYearOptions, MONTH_NAMES } from "@/lib/tdi";
 import { toast } from "sonner";
 import { Trash2, Plus, Loader2 } from "lucide-react";
 
