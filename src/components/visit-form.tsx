@@ -267,7 +267,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
             <SoapField label="Current Visit" value={currentVisit} onChange={setCurrentVisit} placeholder="What happened this visit…" />
             <SoapField label="Examination" value={examination} onChange={setExamination} placeholder="On examination…" />
             <SoapField label="Impression" value={impression} onChange={setImpression} placeholder="Impression: …" />
-            <SoapField label="Plan" value={plan} onChange={setPlan} placeholder="1. Continue… 2. Start…" />
+            <SoapField label="Notes" value={plan} onChange={setPlan} placeholder="Additional notes…" />
           </Card>
 
           <div className="space-y-4">
