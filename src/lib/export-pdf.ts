@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import type { Doctor, Patient, Visit } from "./types";
 import { calcAge } from "./format";
+import { formatTdiDuration, formatTdiStartLabel } from "./tdi";
 
 // Layout constants (mm). A4 = 210 x 297mm.
 const PAGE_W = 210;
