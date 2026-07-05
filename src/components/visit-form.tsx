@@ -469,3 +469,45 @@ function DrugAutocomplete({ value, onChange, className }: { value: string; onCha
     </div>
   );
 }
+
+export function PrescriptionNotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasValue = value.trim().length > 0;
+  return (
+    <div className="flex items-start gap-1">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
+        aria-label={expanded ? "Collapse notes" : "Expand notes"}
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      {expanded ? (
+        <Textarea
+          rows={2}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            const t = e.currentTarget;
+            t.style.height = "auto";
+            t.style.height = `${t.scrollHeight}px`;
+          }}
+          placeholder="Notes (e.g. take with food)"
+          className="resize-none text-sm"
+          onFocus={(e) => { e.currentTarget.style.height = "auto"; e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`; }}
+        />
+      ) : (
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setExpanded(true)}
+          placeholder="Notes (e.g. take with food)"
+          className={`truncate ${!hasValue ? "" : ""}`}
+          title={value}
+        />
+      )}
+    </div>
+  );
+}
+
