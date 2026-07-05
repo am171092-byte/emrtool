@@ -19,6 +19,9 @@ import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculat
 import { AIDrawer } from "@/components/ai-drawer";
 import { TagInput } from "@/components/tag-input";
 import { createCalendarEvent } from "@/lib/calendar-service";
+import { listTemplates, type Template, type PrescriptionTemplateItem, type InvestigationTemplateItem } from "@/lib/templates";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { FileText } from "lucide-react";
 
 interface Props {
   patient: Patient;
