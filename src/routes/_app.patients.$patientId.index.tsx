@@ -125,10 +125,7 @@ function PatientRecord() {
             </EditableSection>
 
             <EditableSection title="Special notes">
-              <SpecialNotes
-                value={p.specialNotes ?? ""}
-                onChange={(v) => updateP({ specialNotes: v })}
-              />
+              <SpecialNotes patient={p} />
             </EditableSection>
           </Card>
         </aside>
