@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { upsertVisit, upsertPatient, uid, getVisitsForPatient } from "@/lib/api-store";
+import { useVisitsForPatient } from "@/lib/use-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
 import { Plus, Trash2, Sparkles, History, Pill, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -31,26 +32,52 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const todayIso = today.toISOString().slice(0, 10);
   const nowTime = today.toTimeString().slice(0, 5);
 
+  const patientVisits = useVisitsForPatient(patient.id);
+  const priorVisits = useMemo(
+    () => patientVisits.filter((v) => v.id !== visit?.id),
+    [patientVisits, visit?.id],
+  );
   const lastVisit = useMemo(() => {
     if (visit) return null;
-    return getVisitsForPatient(patient.id)[0];
-  }, [visit, patient.id]);
+    return priorVisits[0] ?? getVisitsForPatient(patient.id)[0];
+  }, [visit, priorVisits, patient.id]);
+  const firstVisit = useMemo(() => priorVisits[priorVisits.length - 1], [priorVisits]);
+  const isFirstEverVisit = !visit && priorVisits.length === 0;
 
   const soap = (visit?.soap ?? {}) as NonNullable<Visit["soap"]> & {
     subjective?: string; objective?: string; assessment?: string;
   };
   const [date, setDate] = useState(visit?.date?.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
-  const [chiefComplaints, setChiefComplaints] = useState<string[]>(
+  const initialChiefComplaints =
     visit?.chiefComplaints && visit.chiefComplaints.length > 0
       ? visit.chiefComplaints
-      : (visit?.chiefComplaint ? [visit.chiefComplaint] : [])
-  );
+      : (visit?.chiefComplaint ? [visit.chiefComplaint] : []);
+  const [chiefComplaints, setChiefComplaints] = useState<string[]>(initialChiefComplaints);
   const [hpi, setHpi] = useState(soap.historyOfPresentingIllness ?? soap.subjective ?? "");
   const [currentVisit, setCurrentVisit] = useState(soap.currentVisit ?? "");
   const [examination, setExamination] = useState(soap.examination ?? soap.objective ?? "");
   const [impression, setImpression] = useState(soap.impression ?? soap.assessment ?? "");
   const [plan, setPlan] = useState(soap.plan ?? "");
+
+  // Pre-fill new-visit HPI from last visit, and chief complaints from first visit — once, when they load.
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (visit || prefilled) return;
+    if (priorVisits.length === 0) return;
+    if (!hpi && lastVisit) {
+      const lastSoap = (lastVisit.soap ?? {}) as NonNullable<Visit["soap"]> & { subjective?: string };
+      const lastHpi = lastSoap.historyOfPresentingIllness ?? lastSoap.subjective ?? "";
+      if (lastHpi) setHpi(lastHpi);
+    }
+    if (chiefComplaints.length === 0 && firstVisit) {
+      const firstCc = firstVisit.chiefComplaints && firstVisit.chiefComplaints.length > 0
+        ? firstVisit.chiefComplaints
+        : (firstVisit.chiefComplaint ? [firstVisit.chiefComplaint] : []);
+      if (firstCc.length > 0) setChiefComplaints(firstCc);
+    }
+    setPrefilled(true);
+  }, [visit, prefilled, priorVisits.length, lastVisit, firstVisit, hpi, chiefComplaints.length]);
 
   const prefVitals = visit?.vitals ?? lastVisit?.vitals ?? patient.vitals?.[0];
   const [bpS, setBpS] = useState<number | "">(prefVitals?.bpSystolic ?? "");
@@ -96,7 +123,21 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    if (chiefComplaints.length === 0) { toast.error("At least one chief complaint is required"); return; }
+    let effectiveComplaints = chiefComplaints;
+    if (effectiveComplaints.length === 0) {
+      if (isFirstEverVisit) {
+        toast.error("At least one chief complaint is required");
+        return;
+      }
+      const firstCc = firstVisit?.chiefComplaints && firstVisit.chiefComplaints.length > 0
+        ? firstVisit.chiefComplaints
+        : (firstVisit?.chiefComplaint ? [firstVisit.chiefComplaint] : []);
+      if (firstCc.length === 0) {
+        toast.error("At least one chief complaint is required");
+        return;
+      }
+      effectiveComplaints = firstCc;
+    }
     setSaving(true);
     const toastId = toast.loading("Saving visit…");
     try {
@@ -106,8 +147,8 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         id, patientId: patient.id,
         date: new Date(date).toISOString(),
         time,
-        chiefComplaints,
-        chiefComplaint: chiefComplaints.join(", "),
+        chiefComplaints: effectiveComplaints,
+        chiefComplaint: effectiveComplaints.join(", "),
         soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
         vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
         prescriptions,
@@ -226,7 +267,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
             <SoapField label="Current Visit" value={currentVisit} onChange={setCurrentVisit} placeholder="What happened this visit…" />
             <SoapField label="Examination" value={examination} onChange={setExamination} placeholder="On examination…" />
             <SoapField label="Impression" value={impression} onChange={setImpression} placeholder="Impression: …" />
-            <SoapField label="Plan" value={plan} onChange={setPlan} placeholder="1. Continue… 2. Start…" />
+            <SoapField label="Notes" value={plan} onChange={setPlan} placeholder="Additional notes…" />
           </Card>
 
           <div className="space-y-4">
