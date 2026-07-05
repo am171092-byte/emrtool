@@ -162,15 +162,19 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
       const reportDateIso = result.reportDate
         ? new Date(result.reportDate).toISOString()
         : new Date().toISOString();
-      const newRows = picks.map((v) => ({
-        id: uid("inv"),
-        date: reportDateIso,
-        testName: v.testName,
-        result: v.value,
-        units: v.unit,
-        referenceRange: v.referenceRange,
-        status: statusFromFlag(v.flag),
-      }));
+      const newRows = picks.map((v) => {
+        const derived = computeFlag(v.value, v.referenceRange);
+        const effectiveFlag = derived || v.flag;
+        return {
+          id: uid("inv"),
+          date: reportDateIso,
+          testName: v.testName,
+          result: v.value,
+          units: v.unit,
+          referenceRange: v.referenceRange,
+          status: statusFromFlag(effectiveFlag),
+        };
+      });
       await upsertPatient({
         ...patient,
         investigations: [...newRows, ...patient.investigations],
