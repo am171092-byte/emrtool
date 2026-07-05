@@ -631,6 +631,25 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
   );
 }
 
+function PrescriptionNoteView({ note }: { note: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="flex items-start gap-1 text-xs text-muted-foreground mt-0.5">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="mt-0.5 shrink-0 hover:text-foreground"
+        aria-label={expanded ? "Collapse note" : "Expand note"}
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      <span className={expanded ? "whitespace-pre-wrap break-words" : "truncate"} title={note}>
+        {note}
+      </span>
+    </div>
+  );
+}
+
 
 // avoid unused
 void jsPDF;
