@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { upsertVisit, upsertPatient, uid, getVisitsForPatient } from "@/lib/api-store";
 import { useVisitsForPatient } from "@/lib/use-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
-import { Plus, Trash2, Sparkles, History, Pill, Loader2 } from "lucide-react";
+import { Plus, Trash2, Sparkles, History, Pill, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
