@@ -172,8 +172,13 @@ function PatientRecord() {
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
                       {v.prescriptions.length > 0 && (
                         <Section label="Prescriptions">
-                          <ul className="list-disc pl-5">
-                            {v.prescriptions.map((r) => <li key={r.id}>{r.drug} {r.dose} · {r.frequency} · {r.duration}</li>)}
+                          <ul className="list-disc pl-5 space-y-1">
+                            {v.prescriptions.map((r) => (
+                              <li key={r.id}>
+                                <span>{r.drug} {r.dose} · {r.frequency} · {r.duration}</span>
+                                {r.notes && r.notes.trim() && <PrescriptionNoteView note={r.notes} />}
+                              </li>
+                            ))}
                           </ul>
                         </Section>
                       )}
