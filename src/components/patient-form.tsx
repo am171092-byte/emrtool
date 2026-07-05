@@ -140,7 +140,38 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
       <Card className="p-5 space-y-4">
         <h2 className="font-semibold">Clinical details</h2>
         <Field label="Primary diagnosis"><Input value={primaryDx} onChange={(e) => setPrimaryDx(e.target.value)} placeholder="e.g. Rheumatoid Arthritis" /></Field>
-        <Field label="Total Duration of Illness (TDI)"><Input value={tdi} onChange={(e) => setTdi(e.target.value)} placeholder="e.g. 3 years, 18 months" /></Field>
+        <Field label="Total Duration of Illness (TDI)">
+          <div className="flex gap-2">
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm flex-1"
+              value={tdiMonth}
+              onChange={(e) => setTdiMonth(e.target.value ? Number(e.target.value) : "")}
+            >
+              <option value="">Month…</option>
+              {MONTH_NAMES.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-sm flex-1"
+              value={tdiYear}
+              onChange={(e) => setTdiYear(e.target.value ? Number(e.target.value) : "")}
+            >
+              <option value="">Year…</option>
+              {tdiYearOptions().map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          {typeof tdiMonth === "number" && typeof tdiYear === "number" && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Duration: {formatTdiDuration(buildTdiStart(tdiYear, tdiMonth)) || "—"}
+            </div>
+          )}
+          {tdi && !initial?.tdiStartDate && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Existing: <span className="font-medium">{tdi}</span> — set month & year to auto-calculate.
+            </div>
+          )}
+        </Field>
         <Field label="Allergies"><TagInput value={allergies} onChange={setAllergies} placeholder="Type allergy, press Enter" tone="danger" /></Field>
         <Field label="Comorbidities"><TagInput value={comorbidities} onChange={setComorbidities} placeholder="e.g. Hypertension" /></Field>
         <Field label="Current issues"><TagInput value={problems} onChange={setProblems} placeholder="Add issue, press Enter" /></Field>
