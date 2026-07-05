@@ -129,7 +129,7 @@ export interface Patient {
   pastMedicalHistory?: string;
   comorbidities: Comorbidity[];
   problemList: string[];
-  specialNotes?: string;
+  specialNotes?: string | SpecialNote[];
   vitals?: VitalsEntry[];
   investigations: Investigation[];
   attachments: Attachment[];
@@ -140,6 +140,12 @@ export interface Patient {
   nextFollowUp?: string;
   nextVisitReason?: string;
   das28History?: DAS28Entry[];
+}
+
+export interface SpecialNote {
+  id: string;
+  date: string;
+  text: string;
 }
 
 export interface DAS28Entry extends DAS28Data {

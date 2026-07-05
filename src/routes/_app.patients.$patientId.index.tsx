@@ -125,10 +125,7 @@ function PatientRecord() {
             </EditableSection>
 
             <EditableSection title="Special notes">
-              <SpecialNotes
-                value={p.specialNotes ?? ""}
-                onChange={(v) => updateP({ specialNotes: v })}
-              />
+              <SpecialNotes patient={p} />
             </EditableSection>
           </Card>
         </aside>
@@ -692,25 +689,61 @@ function PrescriptionNoteView({ note }: { note: string }) {
   );
 }
 
-function SpecialNotes({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function parseSpecialNotes(raw: unknown): import("@/lib/types").SpecialNote[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw as import("@/lib/types").SpecialNote[];
+  if (typeof raw === "string") {
+    const s = raw.trim();
+    if (!s) return [];
+    if (s.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* fall through */ }
+    }
+    // legacy plain-text: split lines to entries with unknown dates
+    return s.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((text) => ({
+      id: uid("note"),
+      date: new Date().toISOString(),
+      text,
+    }));
+  }
+  return [];
+}
+
+function formatNoteDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  });
+}
+
+function SpecialNotes({ patient }: { patient: import("@/lib/types").Patient }) {
+  type Note = import("@/lib/types").SpecialNote;
+  const notes = parseSpecialNotes(patient.specialNotes);
+  const sorted = [...notes].sort((a, b) => +new Date(b.date) - +new Date(a.date));
+
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
 
-  const entries = value
-    ? value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
-    : [];
+  const persist = async (next: Note[]) => {
+    await upsertPatient({ ...patient, specialNotes: next });
+  };
 
   const save = async () => {
     const text = draft.trim();
     if (!text) { setAdding(false); setDraft(""); return; }
     setSaving(true);
     try {
-      const date = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-      const stamped = `[${date}] ${text}`;
-      const next = value && value.trim() ? `${stamped}\n${value}` : stamped;
-      await Promise.resolve(onChange(next));
-      toast.success("Note added");
+      const newNote: Note = { id: uid("note"), date: new Date().toISOString(), text };
+      await persist([newNote, ...notes]);
+      toast.success("Note saved");
       setDraft("");
       setAdding(false);
     } catch (err) {
@@ -720,15 +753,35 @@ function SpecialNotes({ value, onChange }: { value: string; onChange: (v: string
     }
   };
 
+  const saveEdit = async (id: string) => {
+    const text = editDraft.trim();
+    if (!text) return;
+    try {
+      const next = notes.map((n) => (n.id === id ? { ...n, text } : n));
+      await persist(next);
+      toast.success("Note saved");
+      setEditingId(null);
+      setEditDraft("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save note");
+    }
+  };
+
+  const doDelete = async (id: string) => {
+    try {
+      await persist(notes.filter((n) => n.id !== id));
+      toast.success("Note deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete note");
+    } finally {
+      setConfirmDel(null);
+    }
+  };
+
   return (
     <div className="space-y-2">
       {!adding && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="w-full"
-          onClick={() => setAdding(true)}
-        >
+        <Button size="sm" variant="outline" className="w-full" onClick={() => setAdding(true)}>
           <Plus className="h-3 w-3 mr-1" /> Add note
         </Button>
       )}
@@ -752,13 +805,61 @@ function SpecialNotes({ value, onChange }: { value: string; onChange: (v: string
           </div>
         </div>
       )}
-      {entries.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="text-xs text-muted-foreground">No notes yet.</div>
       ) : (
-        <ul className="space-y-1.5 max-h-64 overflow-auto pr-1">
-          {entries.map((line, i) => (
-            <li key={i} className="text-xs text-foreground/90 whitespace-pre-wrap break-words border-l-2 border-primary/30 pl-2">
-              {line}
+        <ul className="space-y-2 max-h-72 overflow-auto pr-1">
+          {sorted.map((n) => (
+            <li key={n.id} className="text-xs border-l-2 border-primary/30 pl-2">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {formatNoteDate(n.date)}
+                </span>
+                {editingId !== n.id && (
+                  <div className="flex gap-0.5">
+                    <Button
+                      variant="ghost" size="icon" className="h-6 w-6"
+                      onClick={() => { setEditingId(n.id); setEditDraft(n.text); }}
+                      aria-label="Edit note"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon" className="h-6 w-6 text-destructive"
+                      onClick={() => setConfirmDel(n.id)}
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {editingId === n.id ? (
+                <div className="mt-1 space-y-1">
+                  <Textarea
+                    rows={3}
+                    value={editDraft}
+                    onChange={(e) => setEditDraft(e.target.value)}
+                    className="resize-y text-sm"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveEdit(n.id)} disabled={!editDraft.trim()}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditDraft(""); }}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap break-words text-foreground/90 mt-0.5">{n.text}</div>
+              )}
+              {confirmDel === n.id && (
+                <div className="mt-1 p-2 rounded bg-destructive/10 border border-destructive/20 space-y-1">
+                  <div className="text-xs">Delete this note?</div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="destructive" onClick={() => doDelete(n.id)}>Delete</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setConfirmDel(null)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
