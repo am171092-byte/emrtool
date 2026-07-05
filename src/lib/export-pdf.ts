@@ -5,10 +5,14 @@ import { calcAge } from "./format";
 // Layout constants (mm). A4 = 210 x 297mm.
 const PAGE_W = 210;
 const PAGE_H = 297;
-const TOP_MARGIN = 65;     // 6.5 cm — applied to EVERY page
-const BOTTOM_MARGIN = 35;  // 3.5 cm
-const LEFT = 10;           // 1 cm
-const RIGHT = 10;          // 1 cm
+// Page 1: letterhead space at top, signature space at bottom.
+const P1_TOP = 65;      // 6.5 cm
+const P1_BOTTOM = 35;   // 3.5 cm
+// Page 2+: normal margins.
+const PN_TOP = 20;      // 2 cm
+const PN_BOTTOM = 20;   // 2 cm
+const LEFT = 10;        // 1 cm
+const RIGHT = 10;       // 1 cm
 const CONTENT_W = PAGE_W - LEFT - RIGHT;
 
 // Spacing tokens (mm).
@@ -26,13 +30,19 @@ type RenderOpts = { mode: "save" | "print"; doctor?: Doctor | null };
 
 function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  let y = TOP_MARGIN;
+  const pageTop = () => (doc.getNumberOfPages() === 1 ? P1_TOP : PN_TOP);
+  const pageBottom = () => (doc.getNumberOfPages() === 1 ? P1_BOTTOM : PN_BOTTOM);
+  let y = pageTop();
   let firstSection = true;
 
+  const addNewPage = () => {
+    doc.addPage();
+    y = pageTop();
+  };
+
   const ensureSpace = (h: number) => {
-    if (y + h > PAGE_H - BOTTOM_MARGIN) {
-      doc.addPage();
-      y = TOP_MARGIN;
+    if (y + h > PAGE_H - pageBottom()) {
+      addNewPage();
     }
   };
 
@@ -58,10 +68,9 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
 
   const sectionTitle = (label: string) => {
     if (!firstSection) y += SECTION_GAP;
-    const remaining = PAGE_H - BOTTOM_MARGIN - y;
+    const remaining = PAGE_H - pageBottom() - y;
     if (remaining < MIN_SECTION_SPACE) {
-      doc.addPage();
-      y = TOP_MARGIN;
+      addNewPage();
     }
     firstSection = false;
     doc.setFont(FONT, "bold");
@@ -239,16 +248,19 @@ function renderSignature(
   }
   const blockH = SIGNATURE_GAP + lines.reduce((s, l) => s + l.h, 0);
 
+  const currentBottom = () => (doc.getNumberOfPages() === 1 ? P1_BOTTOM : PN_BOTTOM);
+  const currentTop = () => (doc.getNumberOfPages() === 1 ? P1_TOP : PN_TOP);
+
   let y = getY();
-  const remaining = PAGE_H - BOTTOM_MARGIN - y;
+  const remaining = PAGE_H - currentBottom() - y;
 
   // Anchor to bottom if it fits on current page; otherwise start a new page and anchor there.
   if (remaining < blockH) {
     doc.addPage();
-    y = TOP_MARGIN;
+    y = currentTop();
   }
   // Push to just above bottom margin
-  const blockTop = PAGE_H - BOTTOM_MARGIN - blockH;
+  const blockTop = PAGE_H - currentBottom() - blockH;
   if (blockTop > y) y = blockTop;
 
   // 3cm blank space for physical signature
