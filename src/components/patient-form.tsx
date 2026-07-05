@@ -31,7 +31,10 @@ export function PatientForm({ initial, onSaved, onCancel }: Props) {
   const [problems, setProblems] = useState<string[]>(initial?.problemList ?? []);
   const [pmh, setPmh] = useState(initial?.pastMedicalHistory ?? "");
   const [primaryDx, setPrimaryDx] = useState(initial?.primaryDiagnosis ?? "");
-  const [tdi, setTdi] = useState(initial?.tdi ?? "");
+  const [tdi] = useState(initial?.tdi ?? "");
+  const initialTdi = parseTdiStart(initial?.tdiStartDate);
+  const [tdiMonth, setTdiMonth] = useState<number | "">(initialTdi?.month ?? "");
+  const [tdiYear, setTdiYear] = useState<number | "">(initialTdi?.year ?? "");
 
   // Vitals (initial only)
   const [bpS, setBpS] = useState<number | "">("");
