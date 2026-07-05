@@ -47,6 +47,53 @@ function statusFromFlag(flag?: string): "Normal" | "Abnormal" | "Critical" {
   return sharedStatusFromFlag(flag);
 }
 
+const JUNK_NAME_RE = /\b(comment|note|disclaimer|interpretation|method|methodology|sample|specimen|collected|received|reported|doctor|signature|page|barcode|end of report|remarks?)\b/i;
+const JUNK_VALUE_RE = /^(see\s+below|see\s+comment|refer|note:|as\s+above|n\/?a|not\s+applicable|-{2,})\b/i;
+const QUAL_RE = /\b(positive|negative|reactive|non[- ]?reactive|detected|not\s+detected|present|absent|normal|abnormal|nil|trace)\b/i;
+
+function isRealLabValue(v: { testName?: string; value?: string }): boolean {
+  const name = String(v.testName ?? "").trim();
+  const value = String(v.value ?? "").trim();
+  if (!name || !value) return false;
+  if (JUNK_NAME_RE.test(name)) return false;
+  if (JUNK_VALUE_RE.test(value)) return false;
+  // Accept if value has a number, or is a recognizable qualitative result.
+  const hasNumber = /-?\d+(\.\d+)?/.test(value);
+  if (hasNumber) return true;
+  if (QUAL_RE.test(value)) return true;
+  return false;
+}
+
+function parseReportDate(raw: unknown): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return new Date().toISOString();
+  // Try native parse first
+  const direct = new Date(s);
+  if (!isNaN(direct.getTime())) return direct.toISOString();
+  // dd/mm/yyyy or dd-mm-yyyy (rearranged)
+  const m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) {
+    const dd = parseInt(m[1], 10);
+    const mm = parseInt(m[2], 10);
+    let yy = parseInt(m[3], 10);
+    if (yy < 100) yy += yy < 50 ? 2000 : 1900;
+    const d = new Date(Date.UTC(yy, mm - 1, dd));
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  return new Date().toISOString();
+}
+
+function normalizeReportDate(raw: unknown): string | undefined {
+  const s = String(raw ?? "").trim();
+  if (!s) return undefined;
+  const direct = new Date(s);
+  if (!isNaN(direct.getTime())) return s;
+  const m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) return s; // keep original display; parseReportDate will handle
+  return undefined;
+}
+
+
 function cleanBase64(dataUrl: string): string {
   if (!dataUrl) return "";
   let s = dataUrl.trim();
