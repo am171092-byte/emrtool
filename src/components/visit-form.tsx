@@ -123,7 +123,21 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    if (chiefComplaints.length === 0) { toast.error("At least one chief complaint is required"); return; }
+    let effectiveComplaints = chiefComplaints;
+    if (effectiveComplaints.length === 0) {
+      if (isFirstEverVisit) {
+        toast.error("At least one chief complaint is required");
+        return;
+      }
+      const firstCc = firstVisit?.chiefComplaints && firstVisit.chiefComplaints.length > 0
+        ? firstVisit.chiefComplaints
+        : (firstVisit?.chiefComplaint ? [firstVisit.chiefComplaint] : []);
+      if (firstCc.length === 0) {
+        toast.error("At least one chief complaint is required");
+        return;
+      }
+      effectiveComplaints = firstCc;
+    }
     setSaving(true);
     const toastId = toast.loading("Saving visit…");
     try {
