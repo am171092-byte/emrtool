@@ -12,7 +12,7 @@ import { usePatient, useVisitsForPatient } from "@/lib/use-store";
 import { upsertPatient, touchRecent, addAttachment, deleteAttachment, uid, deleteVisit } from "@/lib/api-store";
 import { calcAge, formatDate, formatDateTime } from "@/lib/format";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
-import { Pencil, Plus, Phone, Mail, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2 } from "lucide-react";
+import { Pencil, Plus, Phone, Mail, FileDown, Printer, Trash2, Upload, FileText, CalendarPlus, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { exportVisitPdf, printVisitPdf } from "@/lib/export-pdf";
@@ -172,8 +172,13 @@ function PatientRecord() {
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
                       {v.prescriptions.length > 0 && (
                         <Section label="Prescriptions">
-                          <ul className="list-disc pl-5">
-                            {v.prescriptions.map((r) => <li key={r.id}>{r.drug} {r.dose} · {r.frequency} · {r.duration}</li>)}
+                          <ul className="list-disc pl-5 space-y-1">
+                            {v.prescriptions.map((r) => (
+                              <li key={r.id}>
+                                <span>{r.drug} {r.dose} · {r.frequency} · {r.duration}</span>
+                                {r.notes && r.notes.trim() && <PrescriptionNoteView note={r.notes} />}
+                              </li>
+                            ))}
                           </ul>
                         </Section>
                       )}
@@ -623,6 +628,25 @@ function NextVisitCard({ patient }: { patient: ReturnType<typeof usePatient> & {
         <div className="text-xs text-muted-foreground">No follow-up scheduled.</div>
       )}
     </Card>
+  );
+}
+
+function PrescriptionNoteView({ note }: { note: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="flex items-start gap-1 text-xs text-muted-foreground mt-0.5">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="mt-0.5 shrink-0 hover:text-foreground"
+        aria-label={expanded ? "Collapse note" : "Expand note"}
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      <span className={expanded ? "whitespace-pre-wrap break-words" : "truncate"} title={note}>
+        {note}
+      </span>
+    </div>
   );
 }
 

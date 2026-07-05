@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { upsertVisit, upsertPatient, uid, getVisitsForPatient } from "@/lib/api-store";
 import { useVisitsForPatient } from "@/lib/use-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
-import { Plus, Trash2, Sparkles, History, Pill, Loader2 } from "lucide-react";
+import { Plus, Trash2, Sparkles, History, Pill, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -301,13 +301,20 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
               <div className="space-y-2 mt-3">
                 {prescriptions.length === 0 && <div className="text-xs text-muted-foreground">None.</div>}
                 {prescriptions.map((rx, i) => (
-                  <div key={rx.id} className="grid grid-cols-12 gap-1 items-center">
-                    <DrugAutocomplete className="col-span-12 md:col-span-3" value={rx.drug} onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, drug: v } : x))} />
-                    <Input className="col-span-4 md:col-span-2" placeholder="Dose" value={rx.dose} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, dose: e.target.value } : x))} />
-                    <Input className="col-span-4 md:col-span-2" placeholder="Freq" value={rx.frequency} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, frequency: e.target.value } : x))} />
-                    <Input className="col-span-3 md:col-span-2" placeholder="Duration" value={rx.duration} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, duration: e.target.value } : x))} />
-                    <Input className="col-span-11 md:col-span-2" placeholder="Notes (e.g. take with food)" value={rx.notes ?? ""} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, notes: e.target.value } : x))} />
-                    <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setPrescriptions(prescriptions.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
+                  <div key={rx.id} className="space-y-1">
+                    <div className="grid grid-cols-12 gap-1 items-center">
+                      <DrugAutocomplete className="col-span-12 md:col-span-3" value={rx.drug} onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, drug: v } : x))} />
+                      <Input className="col-span-4 md:col-span-2" placeholder="Dose" value={rx.dose} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, dose: e.target.value } : x))} />
+                      <Input className="col-span-4 md:col-span-2" placeholder="Freq" value={rx.frequency} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, frequency: e.target.value } : x))} />
+                      <Input className="col-span-4 md:col-span-2" placeholder="Duration" value={rx.duration} onChange={(e) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, duration: e.target.value } : x))} />
+                      <div className="col-span-11 md:col-span-2">
+                        <PrescriptionNotesField
+                          value={rx.notes ?? ""}
+                          onChange={(v) => setPrescriptions(prescriptions.map((x, idx) => idx === i ? { ...x, notes: v } : x))}
+                        />
+                      </div>
+                      <Button className="col-span-1" type="button" variant="ghost" size="icon" onClick={() => setPrescriptions(prescriptions.filter((_, idx) => idx !== i))}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -462,3 +469,45 @@ function DrugAutocomplete({ value, onChange, className }: { value: string; onCha
     </div>
   );
 }
+
+export function PrescriptionNotesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasValue = value.trim().length > 0;
+  return (
+    <div className="flex items-start gap-1">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="mt-1 shrink-0 text-muted-foreground hover:text-foreground"
+        aria-label={expanded ? "Collapse notes" : "Expand notes"}
+      >
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      {expanded ? (
+        <Textarea
+          rows={2}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            const t = e.currentTarget;
+            t.style.height = "auto";
+            t.style.height = `${t.scrollHeight}px`;
+          }}
+          placeholder="Notes (e.g. take with food)"
+          className="resize-none text-sm"
+          onFocus={(e) => { e.currentTarget.style.height = "auto"; e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`; }}
+        />
+      ) : (
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setExpanded(true)}
+          placeholder="Notes (e.g. take with food)"
+          className={`truncate ${!hasValue ? "" : ""}`}
+          title={value}
+        />
+      )}
+    </div>
+  );
+}
+
