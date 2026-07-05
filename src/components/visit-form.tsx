@@ -240,6 +240,40 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     setCarryOpen(null);
   };
 
+  const [templates, setTemplates] = useState<Template[]>([]);
+  useEffect(() => {
+    let alive = true;
+    listTemplates().then((t) => { if (alive) setTemplates(t); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const rxTemplates = useMemo(() => templates.filter((t) => t.type === "prescription"), [templates]);
+  const invTemplates = useMemo(() => templates.filter((t) => t.type === "investigation"), [templates]);
+
+  const loadRxTemplate = (t: Template) => {
+    const rows = (t.items as PrescriptionTemplateItem[]).map((it) => ({
+      id: uid("rx"),
+      drug: it.drug || "",
+      dose: it.dose || "",
+      frequency: it.frequency || "",
+      duration: it.duration || "",
+      notes: it.notes || "",
+    }));
+    setPrescriptions([...prescriptions, ...rows]);
+    toast.success(`Loaded ${rows.length} item${rows.length === 1 ? "" : "s"} from "${t.name}"`);
+  };
+
+  const loadInvTemplate = (t: Template) => {
+    const rows = (t.items as InvestigationTemplateItem[]).map((it) => ({
+      id: uid("inv"),
+      testName: it.testName || "",
+      urgency: (it.urgency as "Routine" | "Urgent" | "Follow up") || "Routine",
+      notes: it.notes,
+    }));
+    setInvestigations([...investigations, ...rows]);
+    toast.success(`Loaded ${rows.length} item${rows.length === 1 ? "" : "s"} from "${t.name}"`);
+  };
+
+
 
 
   return (
