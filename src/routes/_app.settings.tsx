@@ -176,6 +176,9 @@ function SettingsPage() {
         </div>
       </Card>
 
+      <TemplatesCard />
+
+
       <Card className="p-5">
         <h2 className="font-semibold mb-1">About</h2>
         <p className="text-xs text-muted-foreground">RheumCare EMR v1.0 — Your data is stored securely in your Google Drive.</p>
