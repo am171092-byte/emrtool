@@ -105,8 +105,9 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
         throw new Error(err.error || `Extraction failed (${res.status})`);
       }
       const data: ExtractResponse = await res.json();
-      const values = Array.isArray(data.values) ? data.values : [];
-      setResult({ ...data, values });
+      const rawValues = Array.isArray(data.values) ? data.values : [];
+      const values = rawValues.filter(isRealLabValue);
+      setResult({ ...data, reportDate: normalizeReportDate(data.reportDate), values });
       const def: Record<number, boolean> = {};
       values.forEach((_, i) => { def[i] = true; });
       setChecked(def);
