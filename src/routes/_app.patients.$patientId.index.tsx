@@ -122,6 +122,13 @@ function PatientRecord() {
             <EditableSection title="Current issues">
               <TagInput value={p.problemList} onChange={(v) => updateP({ problemList: v })} placeholder="Add issue" />
             </EditableSection>
+
+            <EditableSection title="Special notes">
+              <SpecialNotes
+                value={p.specialNotes ?? ""}
+                onChange={(v) => updateP({ specialNotes: v })}
+              />
+            </EditableSection>
           </Card>
         </aside>
 
@@ -646,6 +653,81 @@ function PrescriptionNoteView({ note }: { note: string }) {
       <span className={expanded ? "whitespace-pre-wrap break-words" : "truncate"} title={note}>
         {note}
       </span>
+    </div>
+  );
+}
+
+function SpecialNotes({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const entries = value
+    ? value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    : [];
+
+  const save = async () => {
+    const text = draft.trim();
+    if (!text) { setAdding(false); setDraft(""); return; }
+    setSaving(true);
+    try {
+      const date = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      const stamped = `[${date}] ${text}`;
+      const next = value && value.trim() ? `${stamped}\n${value}` : stamped;
+      await Promise.resolve(onChange(next));
+      toast.success("Note added");
+      setDraft("");
+      setAdding(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save note");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {!adding && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onClick={() => setAdding(true)}
+        >
+          <Plus className="h-3 w-3 mr-1" /> Add note
+        </Button>
+      )}
+      {adding && (
+        <div className="space-y-2">
+          <Textarea
+            rows={3}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Patient called about medication side effects…"
+            className="resize-y text-sm"
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={save} disabled={saving || !draft.trim()}>
+              {saving ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving…</> : "Save"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setAdding(false); setDraft(""); }} disabled={saving}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+      {entries.length === 0 ? (
+        <div className="text-xs text-muted-foreground">No notes yet.</div>
+      ) : (
+        <ul className="space-y-1.5 max-h-64 overflow-auto pr-1">
+          {entries.map((line, i) => (
+            <li key={i} className="text-xs text-foreground/90 whitespace-pre-wrap break-words border-l-2 border-primary/30 pl-2">
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
