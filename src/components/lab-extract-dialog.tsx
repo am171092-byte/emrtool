@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { Patient } from "@/lib/types";
 import { uid, addAttachment, upsertPatient } from "@/lib/api-store";
 import { getAuthToken } from "@/lib/auth-context";
+import { computeFlag, statusFromFlag as sharedStatusFromFlag } from "@/lib/lab-flag";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -43,9 +44,7 @@ function flagBadge(flag?: string) {
 }
 
 function statusFromFlag(flag?: string): "Normal" | "Abnormal" | "Critical" {
-  const f = (flag || "").toLowerCase();
-  if (f === "high" || f === "low") return "Abnormal";
-  return "Normal";
+  return sharedStatusFromFlag(flag);
 }
 
 function cleanBase64(dataUrl: string): string {
@@ -163,15 +162,19 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
       const reportDateIso = result.reportDate
         ? new Date(result.reportDate).toISOString()
         : new Date().toISOString();
-      const newRows = picks.map((v) => ({
-        id: uid("inv"),
-        date: reportDateIso,
-        testName: v.testName,
-        result: v.value,
-        units: v.unit,
-        referenceRange: v.referenceRange,
-        status: statusFromFlag(v.flag),
-      }));
+      const newRows = picks.map((v) => {
+        const derived = computeFlag(v.value, v.referenceRange);
+        const effectiveFlag = derived || v.flag;
+        return {
+          id: uid("inv"),
+          date: reportDateIso,
+          testName: v.testName,
+          result: v.value,
+          units: v.unit,
+          referenceRange: v.referenceRange,
+          status: statusFromFlag(effectiveFlag),
+        };
+      });
       await upsertPatient({
         ...patient,
         investigations: [...newRows, ...patient.investigations],
@@ -263,7 +266,7 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
                         <td className="p-1 w-24"><Input className="h-8 font-mono" value={v.value} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, value: e.target.value }; setResult({ ...result, values: next }); }} /></td>
                         <td className="p-1 w-20"><Input className="h-8" value={v.unit ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, unit: e.target.value }; setResult({ ...result, values: next }); }} /></td>
                         <td className="p-1 w-28"><Input className="h-8" value={v.referenceRange ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, referenceRange: e.target.value }; setResult({ ...result, values: next }); }} /></td>
-                        <td className="p-2">{flagBadge(v.flag)}</td>
+                        <td className="p-2">{flagBadge(computeFlag(v.value, v.referenceRange) || v.flag)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -23,6 +23,7 @@ import { ReportUploadDialog } from "@/components/report-upload-dialog";
 import { LabExtractDialog } from "@/components/lab-extract-dialog";
 import { createCalendarEvent } from "@/lib/calendar-service";
 import { useAuth } from "@/lib/auth-context";
+import { computeFlag, statusFromFlag } from "@/lib/lab-flag";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
@@ -420,7 +421,9 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
   const add = () => {
     if (!draft.testName.trim()) return;
     const { date, ...rest } = draft;
-    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date(date).toISOString(), ...rest }, ...patient.investigations] });
+    const flag = computeFlag(rest.result, rest.referenceRange);
+    const status = flag ? statusFromFlag(flag) : rest.status;
+    upsertPatient({ ...patient, investigations: [{ id: uid("inv"), date: new Date(date).toISOString(), ...rest, status }, ...patient.investigations] });
     setDraft({ testName: "", result: "", units: "", referenceRange: "", status: "Normal", date: today() });
     setOpen(false);
     toast.success("Investigation added");
@@ -439,6 +442,8 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
   };
   const saveEdit = () => {
     if (!editingId) return;
+    const flag = computeFlag(edit.result, edit.referenceRange);
+    const status = flag ? statusFromFlag(flag) : edit.status;
     upsertPatient({
       ...patient,
       investigations: patient.investigations.map((r) => r.id !== editingId ? r : {
@@ -447,7 +452,7 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
         result: edit.result || undefined,
         units: edit.units || undefined,
         referenceRange: edit.referenceRange || undefined,
-        status: edit.status,
+        status,
         date: new Date(edit.date).toISOString(),
       }),
     });
