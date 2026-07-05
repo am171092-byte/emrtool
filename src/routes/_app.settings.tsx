@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { TemplatesCard } from "@/components/templates-card";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Settings — RheumCare" }] }),
