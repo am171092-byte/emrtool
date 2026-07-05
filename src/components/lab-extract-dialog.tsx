@@ -266,7 +266,7 @@ export function LabExtractDialog({ patient, file, onClose }: Props) {
                         <td className="p-1 w-24"><Input className="h-8 font-mono" value={v.value} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, value: e.target.value }; setResult({ ...result, values: next }); }} /></td>
                         <td className="p-1 w-20"><Input className="h-8" value={v.unit ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, unit: e.target.value }; setResult({ ...result, values: next }); }} /></td>
                         <td className="p-1 w-28"><Input className="h-8" value={v.referenceRange ?? ""} onChange={(e) => { const next = [...result.values]; next[i] = { ...v, referenceRange: e.target.value }; setResult({ ...result, values: next }); }} /></td>
-                        <td className="p-2">{flagBadge(v.flag)}</td>
+                        <td className="p-2">{flagBadge(computeFlag(v.value, v.referenceRange) || v.flag)}</td>
                       </tr>
                     ))}
                   </tbody>
