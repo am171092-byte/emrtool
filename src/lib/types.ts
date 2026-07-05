@@ -129,6 +129,7 @@ export interface Patient {
   pastMedicalHistory?: string;
   comorbidities: Comorbidity[];
   problemList: string[];
+  specialNotes?: string;
   vitals?: VitalsEntry[];
   investigations: Investigation[];
   attachments: Attachment[];
