@@ -32,26 +32,52 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const todayIso = today.toISOString().slice(0, 10);
   const nowTime = today.toTimeString().slice(0, 5);
 
+  const patientVisits = useVisitsForPatient(patient.id);
+  const priorVisits = useMemo(
+    () => patientVisits.filter((v) => v.id !== visit?.id),
+    [patientVisits, visit?.id],
+  );
   const lastVisit = useMemo(() => {
     if (visit) return null;
-    return getVisitsForPatient(patient.id)[0];
-  }, [visit, patient.id]);
+    return priorVisits[0] ?? getVisitsForPatient(patient.id)[0];
+  }, [visit, priorVisits, patient.id]);
+  const firstVisit = useMemo(() => priorVisits[priorVisits.length - 1], [priorVisits]);
+  const isFirstEverVisit = !visit && priorVisits.length === 0;
 
   const soap = (visit?.soap ?? {}) as NonNullable<Visit["soap"]> & {
     subjective?: string; objective?: string; assessment?: string;
   };
   const [date, setDate] = useState(visit?.date?.slice(0, 10) ?? todayIso);
   const [time, setTime] = useState(visit?.time ?? nowTime);
-  const [chiefComplaints, setChiefComplaints] = useState<string[]>(
+  const initialChiefComplaints =
     visit?.chiefComplaints && visit.chiefComplaints.length > 0
       ? visit.chiefComplaints
-      : (visit?.chiefComplaint ? [visit.chiefComplaint] : [])
-  );
+      : (visit?.chiefComplaint ? [visit.chiefComplaint] : []);
+  const [chiefComplaints, setChiefComplaints] = useState<string[]>(initialChiefComplaints);
   const [hpi, setHpi] = useState(soap.historyOfPresentingIllness ?? soap.subjective ?? "");
   const [currentVisit, setCurrentVisit] = useState(soap.currentVisit ?? "");
   const [examination, setExamination] = useState(soap.examination ?? soap.objective ?? "");
   const [impression, setImpression] = useState(soap.impression ?? soap.assessment ?? "");
   const [plan, setPlan] = useState(soap.plan ?? "");
+
+  // Pre-fill new-visit HPI from last visit, and chief complaints from first visit — once, when they load.
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (visit || prefilled) return;
+    if (priorVisits.length === 0) return;
+    if (!hpi && lastVisit) {
+      const lastSoap = (lastVisit.soap ?? {}) as NonNullable<Visit["soap"]> & { subjective?: string };
+      const lastHpi = lastSoap.historyOfPresentingIllness ?? lastSoap.subjective ?? "";
+      if (lastHpi) setHpi(lastHpi);
+    }
+    if (chiefComplaints.length === 0 && firstVisit) {
+      const firstCc = firstVisit.chiefComplaints && firstVisit.chiefComplaints.length > 0
+        ? firstVisit.chiefComplaints
+        : (firstVisit.chiefComplaint ? [firstVisit.chiefComplaint] : []);
+      if (firstCc.length > 0) setChiefComplaints(firstCc);
+    }
+    setPrefilled(true);
+  }, [visit, prefilled, priorVisits.length, lastVisit, firstVisit, hpi, chiefComplaints.length]);
 
   const prefVitals = visit?.vitals ?? lastVisit?.vitals ?? patient.vitals?.[0];
   const [bpS, setBpS] = useState<number | "">(prefVitals?.bpSystolic ?? "");
