@@ -122,6 +122,13 @@ function PatientRecord() {
             <EditableSection title="Current issues">
               <TagInput value={p.problemList} onChange={(v) => updateP({ problemList: v })} placeholder="Add issue" />
             </EditableSection>
+
+            <EditableSection title="Special notes">
+              <SpecialNotes
+                value={p.specialNotes ?? ""}
+                onChange={(v) => updateP({ specialNotes: v })}
+              />
+            </EditableSection>
           </Card>
         </aside>
 
