@@ -332,6 +332,22 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                   <Button type="button" variant="outline" size="sm" onClick={() => setCarryOpen("last")}>
                     <History className="h-3 w-3 mr-1" />From Last Visit
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" disabled={rxTemplates.length === 0}>
+                        <FileText className="h-3 w-3 mr-1" />Load Template
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {rxTemplates.length === 0 ? (
+                        <DropdownMenuItem disabled>No prescription templates</DropdownMenuItem>
+                      ) : rxTemplates.map((t) => (
+                        <DropdownMenuItem key={t.id} onSelect={() => loadRxTemplate(t)}>
+                          {t.name || "(untitled)"} · <span className="text-muted-foreground ml-1">{t.items.length}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button type="button" variant="outline" size="sm" onClick={addPx}><Plus className="h-3 w-3 mr-1" />Add</Button>
                 </div>
               </div>
