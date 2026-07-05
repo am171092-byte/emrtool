@@ -19,6 +19,9 @@ import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculat
 import { AIDrawer } from "@/components/ai-drawer";
 import { TagInput } from "@/components/tag-input";
 import { createCalendarEvent } from "@/lib/calendar-service";
+import { listTemplates, type Template, type PrescriptionTemplateItem, type InvestigationTemplateItem } from "@/lib/templates";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { FileText } from "lucide-react";
 
 interface Props {
   patient: Patient;
@@ -237,6 +240,40 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     setCarryOpen(null);
   };
 
+  const [templates, setTemplates] = useState<Template[]>([]);
+  useEffect(() => {
+    let alive = true;
+    listTemplates().then((t) => { if (alive) setTemplates(t); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const rxTemplates = useMemo(() => templates.filter((t) => t.type === "prescription"), [templates]);
+  const invTemplates = useMemo(() => templates.filter((t) => t.type === "investigation"), [templates]);
+
+  const loadRxTemplate = (t: Template) => {
+    const rows = (t.items as PrescriptionTemplateItem[]).map((it) => ({
+      id: uid("rx"),
+      drug: it.drug || "",
+      dose: it.dose || "",
+      frequency: it.frequency || "",
+      duration: it.duration || "",
+      notes: it.notes || "",
+    }));
+    setPrescriptions([...prescriptions, ...rows]);
+    toast.success(`Loaded ${rows.length} item${rows.length === 1 ? "" : "s"} from "${t.name}"`);
+  };
+
+  const loadInvTemplate = (t: Template) => {
+    const rows = (t.items as InvestigationTemplateItem[]).map((it) => ({
+      id: uid("inv"),
+      testName: it.testName || "",
+      urgency: (it.urgency as "Routine" | "Urgent" | "Follow up") || "Routine",
+      notes: it.notes,
+    }));
+    setInvestigations([...investigations, ...rows]);
+    toast.success(`Loaded ${rows.length} item${rows.length === 1 ? "" : "s"} from "${t.name}"`);
+  };
+
+
 
 
   return (
@@ -295,6 +332,22 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                   <Button type="button" variant="outline" size="sm" onClick={() => setCarryOpen("last")}>
                     <History className="h-3 w-3 mr-1" />From Last Visit
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" disabled={rxTemplates.length === 0}>
+                        <FileText className="h-3 w-3 mr-1" />Load Template
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {rxTemplates.length === 0 ? (
+                        <DropdownMenuItem disabled>No prescription templates</DropdownMenuItem>
+                      ) : rxTemplates.map((t) => (
+                        <DropdownMenuItem key={t.id} onSelect={() => loadRxTemplate(t)}>
+                          {t.name || "(untitled)"} · <span className="text-muted-foreground ml-1">{t.items.length}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button type="button" variant="outline" size="sm" onClick={addPx}><Plus className="h-3 w-3 mr-1" />Add</Button>
                 </div>
               </div>
@@ -322,9 +375,27 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
 
             <Card className="p-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="font-semibold">Investigations ordered</h2>
-                <Button type="button" variant="outline" size="sm" onClick={addInv}><Plus className="h-3 w-3 mr-1" />Add</Button>
+                <div className="flex gap-2 flex-wrap">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" disabled={invTemplates.length === 0}>
+                        <FileText className="h-3 w-3 mr-1" />Load Template
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {invTemplates.length === 0 ? (
+                        <DropdownMenuItem disabled>No investigation templates</DropdownMenuItem>
+                      ) : invTemplates.map((t) => (
+                        <DropdownMenuItem key={t.id} onSelect={() => loadInvTemplate(t)}>
+                          {t.name || "(untitled)"} · <span className="text-muted-foreground ml-1">{t.items.length}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button type="button" variant="outline" size="sm" onClick={addInv}><Plus className="h-3 w-3 mr-1" />Add</Button>
+                </div>
               </div>
               <div className="space-y-2 mt-3">
                 {investigations.length === 0 && <div className="text-xs text-muted-foreground">None.</div>}
