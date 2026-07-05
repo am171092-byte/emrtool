@@ -525,41 +525,71 @@ function InvestigationsTab({ patient }: { patient: ReturnType<typeof usePatient>
 
 function AttachmentsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} }) {
   if (!patient) return null;
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploading, setUploading] = useState(false);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setPendingFile(file);
     e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    const tid = toast.loading("Uploading file…");
+    try {
+      const b64: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => {
+          const s = String(r.result || "");
+          const i = s.indexOf(",");
+          resolve(i >= 0 ? s.slice(i + 1) : s);
+        };
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+      await addAttachment(patient.id, {
+        filename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        base64Data: b64,
+      });
+      toast.success("File uploaded", { id: tid });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload", { id: tid });
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <>
-      <ReportUploadDialog patient={patient} file={pendingFile} onClose={() => setPendingFile(null)} />
       <Card className="p-6 border-dashed border-2 text-center">
-        <label className="cursor-pointer flex flex-col items-center gap-2">
-          <Upload className="h-6 w-6 text-muted-foreground" />
-          <div className="text-sm font-medium">Upload diagnostic report</div>
-          <div className="text-xs text-muted-foreground">AI verifies patient name and auto-fills lab values</div>
-          <input type="file" className="hidden" onChange={onFile} accept="image/*,application/pdf" />
+        <label className={`cursor-pointer flex flex-col items-center gap-2 ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+          {uploading ? <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+          <div className="text-sm font-medium">{uploading ? "Uploading…" : "Upload file"}</div>
+          <div className="text-xs text-muted-foreground">Any file type — saved to Google Drive as an attachment</div>
+          <input type="file" className="hidden" onChange={onFile} disabled={uploading} />
         </label>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {patient.attachments.map((a) => (
-          <Card key={a.id} className="p-3 text-xs">
-            {a.dataUrl && a.type.startsWith("image/") ? (
-              <img src={a.dataUrl} alt={a.filename} className="aspect-square object-cover rounded mb-2" />
-            ) : (
-              <div className="aspect-square bg-muted rounded mb-2 flex items-center justify-center"><FileText className="h-8 w-8 text-muted-foreground" /></div>
-            )}
-            <div className="truncate font-medium">{a.filename}</div>
-            <div className="text-muted-foreground">{(a.size / 1024).toFixed(1)} KB · {formatDate(a.date)}</div>
-            <div className="flex gap-1 mt-2">
-              {a.dataUrl && <a href={a.dataUrl} download={a.filename} className="text-primary">Download</a>}
-              <button onClick={() => deleteAttachment(patient.id, a.id)} className="text-destructive ml-auto"><Trash2 className="h-3 w-3" /></button>
-            </div>
-          </Card>
-        ))}
+        {patient.attachments.length === 0 && (
+          <div className="col-span-2 md:col-span-4 text-center text-xs text-muted-foreground py-4">No files uploaded yet.</div>
+        )}
+        {patient.attachments.map((a) => {
+          const href = a.dataUrl || getAttachmentUrl(a.id);
+          const isImage = (a.type || "").startsWith("image/");
+          return (
+            <Card key={a.id} className="p-3 text-xs">
+              {a.dataUrl && isImage ? (
+                <img src={a.dataUrl} alt={a.filename} className="aspect-square object-cover rounded mb-2" />
+              ) : (
+                <div className="aspect-square bg-muted rounded mb-2 flex items-center justify-center"><FileText className="h-8 w-8 text-muted-foreground" /></div>
+              )}
+              <div className="truncate font-medium" title={a.filename}>{a.filename}</div>
+              <div className="text-muted-foreground">{a.size ? `${(a.size / 1024).toFixed(1)} KB · ` : ""}{formatDate(a.date)}</div>
+              <div className="flex gap-2 mt-2 items-center">
+                <a href={href} download={a.filename} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1"><FileDown className="h-3 w-3" /> Download</a>
+                <button onClick={() => deleteAttachment(patient.id, a.id)} className="text-destructive ml-auto"><Trash2 className="h-3 w-3" /></button>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </>
   );
