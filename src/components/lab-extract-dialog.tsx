@@ -44,9 +44,7 @@ function flagBadge(flag?: string) {
 }
 
 function statusFromFlag(flag?: string): "Normal" | "Abnormal" | "Critical" {
-  const f = (flag || "").toLowerCase();
-  if (f === "high" || f === "low") return "Abnormal";
-  return "Normal";
+  return sharedStatusFromFlag(flag);
 }
 
 function cleanBase64(dataUrl: string): string {
