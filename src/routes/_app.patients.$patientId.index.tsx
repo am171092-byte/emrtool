@@ -24,6 +24,7 @@ import { LabExtractDialog } from "@/components/lab-extract-dialog";
 import { createCalendarEvent } from "@/lib/calendar-service";
 import { useAuth } from "@/lib/auth-context";
 import { computeFlag, statusFromFlag } from "@/lib/lab-flag";
+import { formatTdiDuration, formatTdiStartLabel } from "@/lib/tdi";
 
 export const Route = createFileRoute("/_app/patients/$patientId/")({
   head: () => ({ meta: [{ title: "Patient record — RheumCare" }] }),
