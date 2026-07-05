@@ -248,16 +248,19 @@ function renderSignature(
   }
   const blockH = SIGNATURE_GAP + lines.reduce((s, l) => s + l.h, 0);
 
+  const currentBottom = () => (doc.getNumberOfPages() === 1 ? P1_BOTTOM : PN_BOTTOM);
+  const currentTop = () => (doc.getNumberOfPages() === 1 ? P1_TOP : PN_TOP);
+
   let y = getY();
-  const remaining = PAGE_H - BOTTOM_MARGIN - y;
+  const remaining = PAGE_H - currentBottom() - y;
 
   // Anchor to bottom if it fits on current page; otherwise start a new page and anchor there.
   if (remaining < blockH) {
     doc.addPage();
-    y = TOP_MARGIN;
+    y = currentTop();
   }
   // Push to just above bottom margin
-  const blockTop = PAGE_H - BOTTOM_MARGIN - blockH;
+  const blockTop = PAGE_H - currentBottom() - blockH;
   if (blockTop > y) y = blockTop;
 
   // 3cm blank space for physical signature
