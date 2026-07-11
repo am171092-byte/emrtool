@@ -103,7 +103,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     (visit?.jointMap?.joints ?? []).forEach((j) => { obj[j.id] = j; });
     return obj;
   });
-  const [jointMode, setJointMode] = useState<Mode>("tender");
+  
   const [das28Snap, setDas28Snap] = useState<DAS28Snapshot | null>(visit?.das28 ?? null);
   const [aiOpen, setAiOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -434,12 +434,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           {enableDas28 && (
             <div className="mt-4 grid lg:grid-cols-2 gap-4">
               <div>
-                <div className="flex gap-2 mb-2">
-                  <Button type="button" variant={jointMode === "tender" ? "default" : "outline"} size="sm" onClick={() => setJointMode("tender")}>Tender</Button>
-                  <Button type="button" variant={jointMode === "swollen" ? "default" : "outline"} size="sm" onClick={() => setJointMode("swollen")}>Swollen</Button>
-                  <div className="ml-auto text-xs text-muted-foreground self-center">TJC <span className="font-mono">{tjc}</span> · SJC <span className="font-mono">{sjc}</span></div>
+                <div className="flex items-center justify-end mb-2 text-xs text-muted-foreground">
+                  <span>TJC <span className="font-mono">{tjc}</span> · SJC <span className="font-mono">{sjc}</span></span>
                 </div>
-                <JointDiagram states={jointStates} mode={jointMode} onChange={setJointStates} />
+                <JointDiagram states={jointStates} onChange={setJointStates} />
               </div>
               <DAS28Calculator initialTjc={tjc} initialSjc={sjc} onSave={setDas28Snap} onReset={() => setJointStates({})} />
             </div>

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { JointDiagram, type Mode } from "@/components/joint-diagram";
+import { JointDiagram } from "@/components/joint-diagram";
 import type { JointState } from "@/lib/types";
 import { fullJointLabel } from "@/lib/joints";
 import { usePatient } from "@/lib/use-store";
@@ -17,7 +17,6 @@ function JointMapPage() {
   const { patientId } = Route.useParams();
   const p = usePatient(patientId);
   const nav = useNavigate();
-  const [mode, setMode] = useState<Mode>("tender");
   const [states, setStates] = useState<Record<string, JointState>>({});
 
   const list = Object.values(states).filter((j) => j.tender || j.swollen || j.note);
@@ -30,16 +29,12 @@ function JointMapPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Joint map — {p.fullName}</h1>
-        <p className="text-sm text-muted-foreground">28 DAS28 joints. Tap to mark.</p>
+        <p className="text-sm text-muted-foreground">28 DAS28 joints. Tap a joint to mark tender / swollen.</p>
       </div>
 
       <div className="grid lg:grid-cols-5 gap-4">
         <Card className="lg:col-span-3 p-4">
-          <div className="flex gap-2 mb-3">
-            <Button variant={mode === "tender" ? "default" : "outline"} onClick={() => setMode("tender")}>Tender</Button>
-            <Button variant={mode === "swollen" ? "default" : "outline"} onClick={() => setMode("swollen")}>Swollen</Button>
-          </div>
-          <JointDiagram states={states} mode={mode} onChange={setStates} />
+          <JointDiagram states={states} onChange={setStates} />
           <div className="mt-3 flex flex-wrap gap-3 text-xs">
             <Legend color="#E67E22" label="Tender" />
             <Legend color="#2980B9" label="Swollen" />
