@@ -4,16 +4,20 @@ import type { JointState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { X } from "lucide-react";
 
+// Kept exported for backward compatibility with callers that still import the type.
 export type Mode = "tender" | "swollen";
 
 interface Props {
   states: Record<string, JointState>;
-  mode: Mode;
   onChange: (next: Record<string, JointState>) => void;
+  /** @deprecated no longer used — clicking a joint opens a popover with checkboxes. */
+  mode?: Mode;
 }
 
 function stateColor(s: JointState | undefined) {
@@ -27,27 +31,18 @@ function stateColor(s: JointState | undefined) {
 const VB_W = 400;
 const VB_H = 600;
 
-export function JointDiagram({ states, mode, onChange }: Props) {
+export function JointDiagram({ states, onChange }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
-  const applyToggle = (id: string, which: Mode) => {
+  const updateJoint = (id: string, patch: Partial<JointState>) => {
     const cur = states[id] ?? { id, tender: false, swollen: false };
-    const next: JointState = which === "tender"
-      ? { ...cur, tender: !cur.tender }
-      : { ...cur, swollen: !cur.swollen };
-    onChange({ ...states, [id]: next });
+    onChange({ ...states, [id]: { ...cur, ...patch } });
   };
 
   const handleClick = (id: string) => {
-    applyToggle(id, mode);
     setSelectedId(id);
-  };
-
-  const setNote = (id: string, note: string) => {
-    const cur = states[id] ?? { id, tender: false, swollen: false };
-    onChange({ ...states, [id]: { ...cur, note } });
   };
 
   const selected = selectedId ? JOINTS.find((j) => j.id === selectedId) ?? null : null;
@@ -61,9 +56,8 @@ export function JointDiagram({ states, mode, onChange }: Props) {
     const scaleY = rect.height / VB_H;
     const px = selected.x * scaleX;
     const py = selected.y * scaleY;
-    // Position popover: prefer right of joint, flip to left if near right edge.
     const popW = 240;
-    const popH = 170;
+    const popH = 210;
     const margin = 8;
     let left = px + 16;
     if (left + popW + margin > rect.width) left = px - popW - 16;
@@ -73,6 +67,45 @@ export function JointDiagram({ states, mode, onChange }: Props) {
     if (top + popH + margin > rect.height) top = rect.height - popH - margin;
     return { left, top, width: popW };
   })();
+
+  const renderControls = (jointId: string, state: JointState | undefined) => (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer text-sm">
+          <Checkbox
+            checked={!!state?.tender}
+            onCheckedChange={(v) => updateJoint(jointId, { tender: !!v })}
+          />
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: "#E67E22" }} />
+            Tender
+          </span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer text-sm">
+          <Checkbox
+            checked={!!state?.swollen}
+            onCheckedChange={(v) => updateJoint(jointId, { swollen: !!v })}
+          />
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: "#2980B9" }} />
+            Swollen
+          </span>
+        </label>
+      </div>
+      <div>
+        <Label className="text-xs text-muted-foreground mb-1 block">Notes (optional)</Label>
+        <Input
+          key={jointId}
+          defaultValue={state?.note ?? ""}
+          placeholder="e.g. crepitus, ↓ROM"
+          onBlur={(e) => updateJoint(jointId, { note: e.target.value })}
+        />
+      </div>
+      <Button size="sm" className="w-full" onClick={() => setSelectedId(null)}>
+        Done
+      </Button>
+    </div>
+  );
 
   return (
     <div ref={containerRef} className="relative w-full joint-watermark">
@@ -148,32 +181,7 @@ export function JointDiagram({ states, mode, onChange }: Props) {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <Input
-            key={selected.id}
-            defaultValue={selectedState?.note ?? ""}
-            placeholder="Note (e.g. crepitus, ↓ROM)"
-            onBlur={(e) => setNote(selected.id, e.target.value)}
-            autoFocus
-          />
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              variant={selectedState?.tender ? "default" : "outline"}
-              onClick={() => applyToggle(selected.id, "tender")}
-            >
-              {selectedState?.tender ? "✓ " : ""}Tender
-            </Button>
-            <Button
-              size="sm"
-              variant={selectedState?.swollen ? "default" : "outline"}
-              onClick={() => applyToggle(selected.id, "swollen")}
-            >
-              {selectedState?.swollen ? "✓ " : ""}Swollen
-            </Button>
-          </div>
-          <Button size="sm" variant="ghost" className="w-full mt-2" onClick={() => setSelectedId(null)}>
-            Close
-          </Button>
+          {renderControls(selected.id, selectedState)}
         </div>
       )}
 
@@ -186,31 +194,7 @@ export function JointDiagram({ states, mode, onChange }: Props) {
                 <SheetHeader>
                   <SheetTitle>{fullJointLabel(selected.id)}</SheetTitle>
                 </SheetHeader>
-                <div className="mt-3 space-y-3">
-                  <Input
-                    key={selected.id}
-                    defaultValue={selectedState?.note ?? ""}
-                    placeholder="Note (e.g. crepitus, ↓ROM)"
-                    onBlur={(e) => setNote(selected.id, e.target.value)}
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant={selectedState?.tender ? "default" : "outline"}
-                      onClick={() => applyToggle(selected.id, "tender")}
-                    >
-                      {selectedState?.tender ? "✓ " : ""}Tender
-                    </Button>
-                    <Button
-                      variant={selectedState?.swollen ? "default" : "outline"}
-                      onClick={() => applyToggle(selected.id, "swollen")}
-                    >
-                      {selectedState?.swollen ? "✓ " : ""}Swollen
-                    </Button>
-                  </div>
-                  <Button variant="ghost" className="w-full" onClick={() => setSelectedId(null)}>
-                    Close
-                  </Button>
-                </div>
+                <div className="mt-3">{renderControls(selected.id, selectedState)}</div>
               </>
             )}
           </SheetContent>
