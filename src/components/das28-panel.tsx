@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { JointDiagram, type Mode } from "@/components/joint-diagram";
+import { JointDiagram } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
 import type { JointState, Patient, DAS28Entry } from "@/lib/types";
 import { fullJointLabel } from "@/lib/joints";
@@ -12,7 +12,6 @@ import { RotateCcw, Save, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function DAS28Panel({ patient }: { patient: Patient }) {
-  const [mode, setMode] = useState<Mode>("tender");
   const [states, setStates] = useState<Record<string, JointState>>({});
   const [snap, setSnap] = useState<DAS28Snapshot | null>(null);
   const [saving, setSaving] = useState(false);
@@ -52,12 +51,11 @@ export function DAS28Panel({ patient }: { patient: Patient }) {
     <div className="space-y-4">
       <div className="grid lg:grid-cols-5 gap-4">
         <Card className="lg:col-span-2 p-4">
-          <div className="flex gap-2 mb-3">
-            <Button size="sm" variant={mode === "tender" ? "default" : "outline"} onClick={() => setMode("tender")}>Tender</Button>
-            <Button size="sm" variant={mode === "swollen" ? "default" : "outline"} onClick={() => setMode("swollen")}>Swollen</Button>
+          <div className="flex items-center mb-3 text-xs text-muted-foreground">
+            <span>Tap a joint to mark tender / swollen.</span>
             <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setStates({})}><RotateCcw className="h-3 w-3 mr-1" />Reset</Button>
           </div>
-          <JointDiagram states={states} mode={mode} onChange={setStates} />
+          <JointDiagram states={states} onChange={setStates} />
           <div className="mt-3 flex flex-wrap gap-3 text-xs">
             <Legend color="#E67E22" label="Tender" />
             <Legend color="#2980B9" label="Swollen" />
