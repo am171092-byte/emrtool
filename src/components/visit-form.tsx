@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { toast } from "sonner";
-import { JointDiagram, type Mode } from "@/components/joint-diagram";
+import { JointDiagram } from "@/components/joint-diagram";
 import { DAS28Calculator, type DAS28Snapshot } from "@/components/das28-calculator";
 import { AIDrawer } from "@/components/ai-drawer";
 import { TagInput } from "@/components/tag-input";
