@@ -32,14 +32,27 @@ function Dashboard() {
 
   const today = new Date().toDateString();
   const visitsToday = visits.filter((v) => new Date(v.date).toDateString() === today).length;
-  const monthAgo = Date.now() - 30 * 86400000;
-  const visitsThisMonth = visits.filter((v) => +new Date(v.date) >= monthAgo).length;
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const visitsThisMonth = visits.filter((v) => {
+    const d = new Date(v.date);
+    return d >= monthStart && d < monthEnd;
+  }).length;
+
+  // Pending follow-ups: nextFollowUp set and today or in the future.
+  const pendingFollowUps = useMemo(() => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return patients.filter((p) => p.nextFollowUp && +new Date(p.nextFollowUp) >= +startOfToday).length;
+  }, [patients]);
 
   const upcoming = useMemo(() => {
     return patients
       .filter((p) => p.nextFollowUp && daysUntil(p.nextFollowUp)! <= 14 && daysUntil(p.nextFollowUp)! >= -1)
       .sort((a, b) => +new Date(a.nextFollowUp!) - +new Date(b.nextFollowUp!));
   }, [patients]);
+
 
   const recent = useMemo(() => {
     const byId = new Map(patients.map((p) => [p.id, p]));
