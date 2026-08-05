@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth-context";
+import { loadFromBackend } from "@/lib/api-store";
+
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -254,9 +256,12 @@ function UpcomingView() {
         body: JSON.stringify({ eventTitle: evt.title, eventDate: evt.start }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const created = (await res.json()) as Candidate;
+      const payload = (await res.json()) as Candidate & { patient?: Candidate };
+      const created = payload?.patient ?? payload;
       updateEvent(evt.id, { status: "mapped", patient: created, candidates: undefined });
-      toast.success(`Created patient ${created.fullName}`);
+      await loadFromBackend(true);
+      toast.success("Patient created and linked");
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to create patient");
     } finally {
