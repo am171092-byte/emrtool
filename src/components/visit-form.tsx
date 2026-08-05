@@ -536,7 +536,15 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <LabImportDialog
+        open={labImportOpen}
+        onOpenChange={setLabImportOpen}
+        patient={patient}
+        existing={importedLabs}
+        onImport={(rows) => setImportedLabs([...importedLabs, ...rows])}
+      />
     </>
+
 
   );
 }
