@@ -321,11 +321,12 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
           height: typeof height === "number" ? height : patient.vitals?.[0]?.height,
           temperature: typeof temp === "number" ? temp : undefined,
           spo2: typeof spo2 === "number" ? spo2 : undefined,
+          painVAS: typeof painVAS === "number" ? painVAS : undefined,
         },
         ...v,
       ],
     });
-    setBpS(""); setBpD(""); setHr(""); setRespRate(""); setWeight(""); setHeight(""); setTemp(""); setSpo2("");
+    setBpS(""); setBpD(""); setHr(""); setRespRate(""); setWeight(""); setHeight(""); setTemp(""); setSpo2(""); setPainVAS("");
     toast.success("Vitals added");
   };
 
@@ -334,7 +335,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
     setEdit({
       bpS: row.bpSystolic ?? "", bpD: row.bpDiastolic ?? "", hr: row.hr ?? "",
       resp: row.respiratoryRate ?? "", weight: row.weight ?? "", height: row.height ?? "",
-      temp: row.temperature ?? "", spo2: row.spo2 ?? "",
+      temp: row.temperature ?? "", spo2: row.spo2 ?? "", painVAS: row.painVAS ?? "",
     });
   };
   const saveEdit = () => {
@@ -351,6 +352,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
         height: typeof edit.height === "number" ? edit.height : undefined,
         temperature: typeof edit.temp === "number" ? edit.temp : undefined,
         spo2: typeof edit.spo2 === "number" ? edit.spo2 : undefined,
+        painVAS: typeof edit.painVAS === "number" ? edit.painVAS : undefined,
       }),
     });
     setEditingId(null);
@@ -377,7 +379,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
       <Card className="p-3 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th><th className="p-2"></th></tr>
+            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th><th className="p-2">Pain VAS</th><th className="p-2"></th></tr>
           </thead>
           <tbody>
             <tr className="border-t">
@@ -390,6 +392,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
               <td className="p-1 font-mono text-xs">—</td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} placeholder="98.6" /></td>
               <td className="p-1">{numCell(spo2, setSpo2, "w-14")}</td>
+              <td className="p-1">{numCell(painVAS, setPainVAS, "w-16")}</td>
               <td className="p-1"><Button size="sm" onClick={add}>Add</Button></td>
             </tr>
             {v.map((row) => editingId === row.id ? (
@@ -403,6 +406,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 font-mono text-xs">—</td>
                 <td className="p-1">{numCell(edit.temp, (n) => setEdit({ ...edit, temp: n }))}</td>
                 <td className="p-1">{numCell(edit.spo2, (n) => setEdit({ ...edit, spo2: n }), "w-14")}</td>
+                <td className="p-1">{numCell(edit.painVAS, (n) => setEdit({ ...edit, painVAS: n }), "w-16")}</td>
                 <td className="p-1"><div className="flex gap-1"><Button size="sm" onClick={saveEdit}>Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>×</Button></div></td>
               </tr>
             ) : (
@@ -416,6 +420,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 font-mono">{row.weight && row.height ? (row.weight / ((row.height / 100) ** 2)).toFixed(1) : "—"}</td>
                 <td className="p-2 font-mono">{row.temperature ?? "—"}</td>
                 <td className="p-2 font-mono">{row.spo2 ?? "—"}</td>
+                <td className="p-2 font-mono">{row.painVAS ?? "—"}</td>
                 <td className="p-2"><div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(row)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeRow(row.id)}><Trash2 className="h-3 w-3" /></Button></div></td>
               </tr>
             ))}
