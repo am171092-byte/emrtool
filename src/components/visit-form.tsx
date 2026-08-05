@@ -21,7 +21,7 @@ import { TagInput } from "@/components/tag-input";
 import { createCalendarEvent } from "@/lib/calendar-service";
 import { listTemplates, type Template, type PrescriptionTemplateItem, type InvestigationTemplateItem } from "@/lib/templates";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileText } from "lucide-react";
+import { FileText, FlaskConical } from "lucide-react";
 
 interface Props {
   patient: Patient;
