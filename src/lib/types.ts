@@ -113,6 +113,8 @@ export interface Visit {
   followUpNote?: string;
   jointMap?: JointMap;
   das28?: DAS28Data;
+  importedLabValues?: ImportedLabValue[];
+
 }
 
 export interface VitalsEntry extends Vitals {
