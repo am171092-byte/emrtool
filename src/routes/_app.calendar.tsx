@@ -509,7 +509,7 @@ function MonthView() {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const evts: CalEvent[] = Array.isArray(json) ? json : (json.events ?? []);
+      const evts: CalEvent[] = withStableIds(Array.isArray(json) ? json : (json.events ?? []));
       setEvents(evts);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load month");
