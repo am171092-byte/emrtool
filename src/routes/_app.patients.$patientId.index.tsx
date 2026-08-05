@@ -298,6 +298,8 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
   const [height, setHeight] = useState<number | "">("");
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
+  const [painVAS, setPainVAS] = useState<number | "">("");
+
   const [respRate, setRespRate] = useState<number | "">("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edit, setEdit] = useState<{ bpS: number | ""; bpD: number | ""; hr: number | ""; resp: number | ""; weight: number | ""; height: number | ""; temp: number | ""; spo2: number | "" }>({ bpS: "", bpD: "", hr: "", resp: "", weight: "", height: "", temp: "", spo2: "" });
