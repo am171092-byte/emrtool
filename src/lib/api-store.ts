@@ -63,6 +63,8 @@ function normalizeVisit(v: Visit): Visit {
     chiefComplaints,
     prescriptions: ensureArray(v.prescriptions) as Visit["prescriptions"],
     investigations: ensureArray(v.investigations) as Visit["investigations"],
+    importedLabValues: ensureArray(v.importedLabValues) as Visit["importedLabValues"],
+
     soap: {
       historyOfPresentingIllness: s.historyOfPresentingIllness ?? s.subjective ?? "",
       currentVisit: s.currentVisit ?? "",
