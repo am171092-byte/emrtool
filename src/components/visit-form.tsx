@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Patient, Visit, Prescription, Investigation, JointState, DAS28Data } from "@/lib/types";
+import type { Patient, Visit, Prescription, Investigation, JointState, DAS28Data, ImportedLabValue } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
