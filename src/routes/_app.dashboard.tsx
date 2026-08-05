@@ -30,6 +30,12 @@ function Dashboard() {
   const visits = useAllVisits();
   const recentIds = useRecentIds();
 
+  useEffect(() => {
+    loadFromBackend(true);
+    loadAllVisits();
+  }, []);
+
+
   const today = new Date().toDateString();
   const visitsToday = visits.filter((v) => new Date(v.date).toDateString() === today).length;
   const now = new Date();
