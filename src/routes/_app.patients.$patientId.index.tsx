@@ -302,12 +302,13 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
 
   const [respRate, setRespRate] = useState<number | "">("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [edit, setEdit] = useState<{ bpS: number | ""; bpD: number | ""; hr: number | ""; resp: number | ""; weight: number | ""; height: number | ""; temp: number | ""; spo2: number | "" }>({ bpS: "", bpD: "", hr: "", resp: "", weight: "", height: "", temp: "", spo2: "" });
+  const [edit, setEdit] = useState<{ bpS: number | ""; bpD: number | ""; hr: number | ""; resp: number | ""; weight: number | ""; height: number | ""; temp: number | ""; spo2: number | ""; painVAS: number | "" }>({ bpS: "", bpD: "", hr: "", resp: "", weight: "", height: "", temp: "", spo2: "", painVAS: "" });
 
   if (!patient) return null;
 
   const add = () => {
-    if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate) return;
+    if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate && painVAS === "") return;
+
     upsertPatient({
       ...patient,
       vitals: [
