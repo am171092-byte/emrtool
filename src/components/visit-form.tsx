@@ -325,8 +325,50 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
                 <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
                 <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
+                <NumField label="Pain VAS (0–100)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(100, n)))} />
               </div>
             </Card>
+
+            <Card className="p-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="font-semibold">Lab Reports</h2>
+                <Button type="button" variant="outline" size="sm" onClick={() => setLabImportOpen(true)}>
+                  <FlaskConical className="h-3 w-3 mr-1" /> Import Lab Values
+                </Button>
+              </div>
+              <div className="mt-3">
+                {importedLabs.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">No lab values imported for this visit.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="text-left text-muted-foreground">
+                        <tr><th className="p-1">Date</th><th className="p-1">Test</th><th className="p-1">Value</th><th className="p-1">Unit</th><th className="p-1">Range</th><th className="p-1">Flag</th><th /></tr>
+                      </thead>
+                      <tbody>
+                        {importedLabs.map((l) => (
+                          <tr key={l.id} className="border-t">
+                            <td className="p-1 whitespace-nowrap">{l.date ? new Date(l.date).toLocaleDateString() : "—"}</td>
+                            <td className="p-1">{l.testName}</td>
+                            <td className="p-1 font-mono">{l.result ?? "—"}</td>
+                            <td className="p-1">{l.units ?? ""}</td>
+                            <td className="p-1">{l.referenceRange ?? ""}</td>
+                            <td className="p-1">{l.status ?? ""}</td>
+                            <td className="p-1">
+                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setImportedLabs(importedLabs.filter((x) => x.id !== l.id))}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+
 
             <Card className="p-5">
               <div className="flex items-center justify-between flex-wrap gap-2">
