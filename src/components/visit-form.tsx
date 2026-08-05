@@ -90,6 +90,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [temp, setTemp] = useState<number | "">(prefVitals?.temperature ?? "");
   const [spo2, setSpo2] = useState<number | "">(prefVitals?.spo2 ?? "");
   const [respRate, setRespRate] = useState<number | "">(prefVitals?.respiratoryRate ?? "");
+  const [painVAS, setPainVAS] = useState<number | "">(visit?.vitals?.painVAS ?? "");
+  const [importedLabs, setImportedLabs] = useState<ImportedLabValue[]>(visit?.importedLabValues ?? []);
+  const [labImportOpen, setLabImportOpen] = useState(false);
+
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(visit?.prescriptions ?? []);
   const [investigations, setInvestigations] = useState<Investigation[]>(visit?.investigations ?? []);
