@@ -21,7 +21,20 @@ export interface Vitals {
   /** Temperature in °F */
   temperature?: number;
   spo2?: number;
+  /** Patient-reported pain score, 0–100 */
+  painVAS?: number;
 }
+
+export interface ImportedLabValue {
+  id: string;
+  date?: string;
+  testName: string;
+  result?: string;
+  units?: string;
+  referenceRange?: string;
+  status?: "Normal" | "Abnormal" | "Critical";
+}
+
 
 export interface Prescription {
   id: string;
