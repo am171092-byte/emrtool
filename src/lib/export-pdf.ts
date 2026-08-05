@@ -208,7 +208,7 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
     if (vit.spo2 != null) parts.push(`SpO₂ ${vit.spo2} %`);
     if (vit.weight != null) parts.push(`Wt ${vit.weight} kg`);
     if (vit.height != null) parts.push(`Ht ${vit.height} cm`);
-    if (vit.painVAS != null) parts.push(`Pain VAS ${vit.painVAS}`);
+    if (vit.painVAS != null) parts.push(`Pain VAS ${vit.painVAS}/10`);
     writeText(parts.join("  ·  "), { size: BODY_SIZE });
   }
 

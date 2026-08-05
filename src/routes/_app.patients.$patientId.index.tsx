@@ -188,7 +188,7 @@ function PatientRecord() {
                       <Section label="Impression">{v.soap.impression || v.soap.assessment || "—"}</Section>
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
                       {v.vitals?.painVAS != null && (
-                        <Section label="Pain VAS">{v.vitals.painVAS} / 100</Section>
+                        <Section label="Pain VAS">{v.vitals.painVAS} / 10</Section>
                       )}
                       {(v.importedLabValues?.length ?? 0) > 0 && (
                         <Section label="Lab Reports">
@@ -370,9 +370,10 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
     Weight: row.weight,
   }));
 
-  const numCell = (val: number | "", set: (n: number | "") => void, w = "w-16") => (
-    <Input className={`h-8 ${w} font-mono`} type="number" value={val} onChange={(e) => set(e.target.value === "" ? "" : Number(e.target.value))} />
+  const numCell = (val: number | "", set: (n: number | "") => void, w = "w-16", max?: number) => (
+    <Input className={`h-8 ${w} font-mono`} type="number" max={max} value={val} onChange={(e) => set(e.target.value === "" ? "" : (max != null ? Math.max(0, Math.min(max, Number(e.target.value))) : Number(e.target.value)))} />
   );
+
 
   return (
     <>
