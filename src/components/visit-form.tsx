@@ -636,3 +636,124 @@ export function PrescriptionNotesField({ value, onChange }: { value: string; onC
   );
 }
 
+
+function LabImportDialog({
+  open,
+  onOpenChange,
+  patient,
+  existing,
+  onImport,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  patient: Patient;
+  existing: ImportedLabValue[];
+  onImport: (rows: ImportedLabValue[]) => void;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!open) { setPicked({}); setExpanded(null); }
+  }, [open]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, Investigation[]>();
+    (patient.investigations ?? []).forEach((inv) => {
+      const key = (inv.date ?? "").slice(0, 10) || "undated";
+      const arr = map.get(key) ?? [];
+      arr.push(inv);
+      map.set(key, arr);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [patient.investigations]);
+
+  const alreadyIn = useMemo(
+    () => new Set(existing.map((e) => `${(e.date ?? "").slice(0, 10)}|${e.testName}`)),
+    [existing],
+  );
+
+  const importSelected = () => {
+    const rows: ImportedLabValue[] = [];
+    groups.forEach(([key, list]) => {
+      list.forEach((inv) => {
+        if (!picked[inv.id]) return;
+        rows.push({
+          id: uid("ilv"),
+          date: key === "undated" ? undefined : new Date(key).toISOString(),
+          testName: inv.testName,
+          result: inv.result,
+          units: inv.units,
+          referenceRange: inv.referenceRange,
+          status: inv.status,
+        });
+      });
+    });
+    if (rows.length === 0) { onOpenChange(false); return; }
+    onImport(rows);
+    toast.success(`Imported ${rows.length} lab value${rows.length === 1 ? "" : "s"}`);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Import lab values</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-auto space-y-2">
+          {groups.length === 0 && (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              No lab values recorded for this patient yet.
+            </div>
+          )}
+          {groups.map(([key, list]) => {
+            const isOpen = expanded === key;
+            return (
+              <div key={key} className="rounded-md border">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50"
+                  onClick={() => setExpanded(isOpen ? null : key)}
+                >
+                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  <span className="font-medium">
+                    {key === "undated" ? "Undated" : new Date(key).toLocaleDateString()}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-auto">{list.length} value{list.length === 1 ? "" : "s"}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t divide-y">
+                    {list.map((inv) => {
+                      const dup = alreadyIn.has(`${key === "undated" ? "" : key}|${inv.testName}`);
+                      return (
+                        <label key={inv.id} className="flex items-start gap-3 px-3 py-2 text-xs cursor-pointer hover:bg-muted/40">
+                          <Checkbox
+                            checked={!!picked[inv.id]}
+                            disabled={dup}
+                            onCheckedChange={(c) => setPicked((p) => ({ ...p, [inv.id]: !!c }))}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{inv.testName}{dup && <span className="ml-2 text-muted-foreground">(already imported)</span>}</div>
+                            <div className="text-muted-foreground">
+                              {[inv.result, inv.units, inv.referenceRange, inv.status].filter(Boolean).join(" · ") || "no value"}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="button" onClick={importSelected}>Import Selected</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
