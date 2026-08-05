@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { useAllPatients, useAllVisits, useRecentIds } from "@/lib/use-store";
+import { loadFromBackend, loadAllVisits } from "@/lib/api-store";
+
 import { useAuth, getAuthToken } from "@/lib/auth-context";
 import { calcAge, daysUntil, formatDate } from "@/lib/format";
 import { Plus, UserPlus, Calculator, Loader2, Calendar as CalendarIcon } from "lucide-react";
