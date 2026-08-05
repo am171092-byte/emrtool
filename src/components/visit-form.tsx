@@ -177,6 +177,16 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       };
       await upsertVisit(next);
 
+      // verify imported lab values survived the round trip; retry once if dropped
+      if (importedLabs.length > 0) {
+        const saved = await loadVisit(id);
+        if (!saved?.importedLabValues || saved.importedLabValues.length === 0) {
+          await upsertVisit({ ...next, importedLabValues: importedLabs });
+        }
+      }
+
+
+
       toast.loading("Updating patient record…", { id: toastId });
       const newMeds = prescriptions
         .filter((p) => p.drug && p.drug.trim())
