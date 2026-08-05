@@ -164,8 +164,9 @@ function UpcomingView() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = (await res.json()) as CalendarResponse;
       json.summary ||= { synced: 0, suggested: 0, review: 0, new: 0 };
-      json.events ||= [];
+      json.events = withStableIds(json.events ?? []);
       setData(json);
+
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load calendar");
     } finally {
