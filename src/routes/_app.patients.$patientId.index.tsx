@@ -187,7 +187,34 @@ function PatientRecord() {
                       <Section label="Examination">{v.soap.examination || v.soap.objective || "—"}</Section>
                       <Section label="Impression">{v.soap.impression || v.soap.assessment || "—"}</Section>
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
+                      {v.vitals?.painVAS != null && (
+                        <Section label="Pain VAS">{v.vitals.painVAS} / 100</Section>
+                      )}
+                      {(v.importedLabValues?.length ?? 0) > 0 && (
+                        <Section label="Lab Reports">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead className="text-left text-muted-foreground">
+                                <tr><th className="p-1">Date</th><th className="p-1">Test</th><th className="p-1">Value</th><th className="p-1">Unit</th><th className="p-1">Range</th><th className="p-1">Flag</th></tr>
+                              </thead>
+                              <tbody>
+                                {v.importedLabValues!.map((l) => (
+                                  <tr key={l.id} className="border-t">
+                                    <td className="p-1 whitespace-nowrap">{l.date ? formatDate(l.date) : "—"}</td>
+                                    <td className="p-1">{l.testName}</td>
+                                    <td className="p-1 font-mono">{l.result ?? "—"}</td>
+                                    <td className="p-1">{l.units ?? ""}</td>
+                                    <td className="p-1">{l.referenceRange ?? ""}</td>
+                                    <td className="p-1">{l.status ?? ""}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </Section>
+                      )}
                       {v.prescriptions.length > 0 && (
+
                         <Section label="Prescriptions">
                           <ul className="list-disc pl-5 space-y-1">
                             {v.prescriptions.map((r) => (
