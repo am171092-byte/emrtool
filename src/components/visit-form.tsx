@@ -157,14 +157,16 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         chiefComplaints: effectiveComplaints,
         chiefComplaint: effectiveComplaints.join(", "),
         soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
-        vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
+        vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined, painVAS: typeof painVAS === "number" ? painVAS : undefined },
         prescriptions,
         investigations,
+        importedLabValues: importedLabs.length > 0 ? importedLabs : undefined,
         investigationNotes: investigationNotes || undefined,
         nextFollowUp: nextFollowUpIso,
         followUpNote: followUpNote || undefined,
         jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
         das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
+
       };
       await upsertVisit(next);
 
