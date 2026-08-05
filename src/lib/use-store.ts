@@ -5,6 +5,7 @@ import {
   getRecentIds,
   subscribe,
   loadFromBackend,
+  loadAllVisits,
   loadPatient,
   loadVisitsForPatient,
   loadVisit,
@@ -19,8 +20,10 @@ export function useAllPatients() {
 }
 
 export function useAllVisits() {
+  useEffect(() => { loadAllVisits(); }, []);
   return useSyncExternalStore(subscribe, getAllVisits, ssrArr as () => ReturnType<typeof getAllVisits>);
 }
+
 
 export function usePatient(id: string | undefined) {
   const all = useAllPatients();

@@ -94,9 +94,10 @@ export function uid(prefix = "id"): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export async function loadFromBackend(): Promise<void> {
-  if (cache.loaded || cache.loading) return;
+export async function loadFromBackend(force = false): Promise<void> {
+  if ((cache.loaded && !force) || cache.loading) return;
   cache.loading = true;
+
   try {
     const patients = (await api<Patient[]>("/api/patients")).map(normalizePatient);
     cache.patients = patients;
@@ -117,8 +118,25 @@ export async function loadFromBackend(): Promise<void> {
   }
 }
 
+let visitsLoading = false;
+
+export async function loadAllVisits(): Promise<void> {
+  if (visitsLoading) return;
+  visitsLoading = true;
+  try {
+    const visits = (await api<Visit[]>("/api/visits")).map(normalizeVisit);
+    cache.visits = visits;
+    notify();
+  } catch (err) {
+    console.error("Failed to load all visits:", err);
+  } finally {
+    visitsLoading = false;
+  }
+}
+
 export function getAllPatients(): Patient[] { return cache.patients; }
 export function getAllVisits(): Visit[] { return cache.visits; }
+
 export function getPatient(id: string): Patient | undefined {
   return cache.patients.find((p) => p.id === id);
 }
@@ -215,7 +233,10 @@ export async function upsertVisit(v: Visit): Promise<void> {
   cache.visits = all;
   notify();
   await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
+  // keep patient (nextFollowUp etc.) fresh after a visit write
+  await loadPatient(norm.patientId).catch(() => undefined);
 }
+
 
 export async function deleteVisit(id: string): Promise<void> {
   cache.visits = cache.visits.filter((v) => v.id !== id);

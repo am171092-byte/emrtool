@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { upsertVisit, upsertPatient, uid, getVisitsForPatient } from "@/lib/api-store";
+import { upsertVisit, upsertPatient, uid, getVisitsForPatient, loadVisit } from "@/lib/api-store";
 import { useVisitsForPatient } from "@/lib/use-store";
 import { RHEUM_DRUGS } from "@/lib/drugs";
 import { Plus, Trash2, Sparkles, History, Pill, Loader2, ChevronDown, ChevronRight } from "lucide-react";
@@ -92,6 +92,13 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [respRate, setRespRate] = useState<number | "">(prefVitals?.respiratoryRate ?? "");
   const [painVAS, setPainVAS] = useState<number | "">(visit?.vitals?.painVAS ?? "");
   const [importedLabs, setImportedLabs] = useState<ImportedLabValue[]>(visit?.importedLabValues ?? []);
+  // keep imported labs in sync when the visit prop arrives/updates (e.g. after save or remount)
+  useEffect(() => {
+    if (visit?.importedLabValues && visit.importedLabValues.length > 0) {
+      setImportedLabs((prev) => (prev.length === 0 ? visit.importedLabValues! : prev));
+    }
+  }, [visit?.id, visit?.importedLabValues]);
+
   const [labImportOpen, setLabImportOpen] = useState(false);
 
 
@@ -169,6 +176,16 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
 
       };
       await upsertVisit(next);
+
+      // verify imported lab values survived the round trip; retry once if dropped
+      if (importedLabs.length > 0) {
+        const saved = await loadVisit(id);
+        if (!saved?.importedLabValues || saved.importedLabValues.length === 0) {
+          await upsertVisit({ ...next, importedLabValues: importedLabs });
+        }
+      }
+
+
 
       toast.loading("Updating patient record…", { id: toastId });
       const newMeds = prescriptions
@@ -325,7 +342,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
                 <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
                 <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
-                <NumField label="Pain VAS (0–100)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(100, n)))} />
+                <NumField label="Pain VAS (0–10)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(10, n)))} />
               </div>
             </Card>
 

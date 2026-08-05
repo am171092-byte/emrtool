@@ -188,7 +188,7 @@ function PatientRecord() {
                       <Section label="Impression">{v.soap.impression || v.soap.assessment || "—"}</Section>
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
                       {v.vitals?.painVAS != null && (
-                        <Section label="Pain VAS">{v.vitals.painVAS} / 100</Section>
+                        <Section label="Pain VAS">{v.vitals.painVAS} / 10</Section>
                       )}
                       {(v.importedLabValues?.length ?? 0) > 0 && (
                         <Section label="Lab Reports">
@@ -370,9 +370,10 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
     Weight: row.weight,
   }));
 
-  const numCell = (val: number | "", set: (n: number | "") => void, w = "w-16") => (
-    <Input className={`h-8 ${w} font-mono`} type="number" value={val} onChange={(e) => set(e.target.value === "" ? "" : Number(e.target.value))} />
+  const numCell = (val: number | "", set: (n: number | "") => void, w = "w-16", max?: number) => (
+    <Input className={`h-8 ${w} font-mono`} type="number" max={max} value={val} onChange={(e) => set(e.target.value === "" ? "" : (max != null ? Math.max(0, Math.min(max, Number(e.target.value))) : Number(e.target.value)))} />
   );
+
 
   return (
     <>
@@ -392,7 +393,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
               <td className="p-1 font-mono text-xs">—</td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} placeholder="98.6" /></td>
               <td className="p-1">{numCell(spo2, setSpo2, "w-14")}</td>
-              <td className="p-1">{numCell(painVAS, setPainVAS, "w-16")}</td>
+              <td className="p-1">{numCell(painVAS, setPainVAS, "w-16", 10)}</td>
               <td className="p-1"><Button size="sm" onClick={add}>Add</Button></td>
             </tr>
             {v.map((row) => editingId === row.id ? (
@@ -406,7 +407,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 font-mono text-xs">—</td>
                 <td className="p-1">{numCell(edit.temp, (n) => setEdit({ ...edit, temp: n }))}</td>
                 <td className="p-1">{numCell(edit.spo2, (n) => setEdit({ ...edit, spo2: n }), "w-14")}</td>
-                <td className="p-1">{numCell(edit.painVAS, (n) => setEdit({ ...edit, painVAS: n }), "w-16")}</td>
+                <td className="p-1">{numCell(edit.painVAS, (n) => setEdit({ ...edit, painVAS: n }), "w-16", 10)}</td>
                 <td className="p-1"><div className="flex gap-1"><Button size="sm" onClick={saveEdit}>Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>×</Button></div></td>
               </tr>
             ) : (
