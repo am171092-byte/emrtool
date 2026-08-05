@@ -118,8 +118,25 @@ export async function loadFromBackend(force = false): Promise<void> {
   }
 }
 
+let visitsLoading = false;
+
+export async function loadAllVisits(): Promise<void> {
+  if (visitsLoading) return;
+  visitsLoading = true;
+  try {
+    const visits = (await api<Visit[]>("/api/visits")).map(normalizeVisit);
+    cache.visits = visits;
+    notify();
+  } catch (err) {
+    console.error("Failed to load all visits:", err);
+  } finally {
+    visitsLoading = false;
+  }
+}
+
 export function getAllPatients(): Patient[] { return cache.patients; }
 export function getAllVisits(): Visit[] { return cache.visits; }
+
 export function getPatient(id: string): Patient | undefined {
   return cache.patients.find((p) => p.id === id);
 }
