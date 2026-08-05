@@ -63,12 +63,24 @@ interface CalendarResponse {
   events: CalEvent[];
 }
 
+/** Guarantee every event has a unique, stable id so per-card state never bleeds across cards. */
+function withStableIds(events: CalEvent[]): CalEvent[] {
+  const seen = new Set<string>();
+  return events.map((e, i) => {
+    let id = e.id && String(e.id).trim() ? String(e.id) : `${e.start ?? ""}|${e.title ?? ""}|${i}`;
+    while (seen.has(id)) id = `${id}|${i}`;
+    seen.add(id);
+    return { ...e, id };
+  });
+}
+
 function authHeaders(): HeadersInit {
   const t = getAuthToken();
   return t
     ? { Authorization: `Bearer ${t}`, "Content-Type": "application/json" }
     : { "Content-Type": "application/json" };
 }
+
 
 function fmtTime(iso: string) {
   try {
@@ -164,8 +176,9 @@ function UpcomingView() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = (await res.json()) as CalendarResponse;
       json.summary ||= { synced: 0, suggested: 0, review: 0, new: 0 };
-      json.events ||= [];
+      json.events = withStableIds(json.events ?? []);
       setData(json);
+
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load calendar");
     } finally {
@@ -496,7 +509,7 @@ function MonthView() {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const evts: CalEvent[] = Array.isArray(json) ? json : (json.events ?? []);
+      const evts: CalEvent[] = withStableIds(Array.isArray(json) ? json : (json.events ?? []));
       setEvents(evts);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load month");

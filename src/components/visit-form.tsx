@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Patient, Visit, Prescription, Investigation, JointState, DAS28Data } from "@/lib/types";
+import type { Patient, Visit, Prescription, Investigation, JointState, DAS28Data, ImportedLabValue } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import { TagInput } from "@/components/tag-input";
 import { createCalendarEvent } from "@/lib/calendar-service";
 import { listTemplates, type Template, type PrescriptionTemplateItem, type InvestigationTemplateItem } from "@/lib/templates";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileText } from "lucide-react";
+import { FileText, FlaskConical } from "lucide-react";
 
 interface Props {
   patient: Patient;
@@ -90,6 +90,10 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [temp, setTemp] = useState<number | "">(prefVitals?.temperature ?? "");
   const [spo2, setSpo2] = useState<number | "">(prefVitals?.spo2 ?? "");
   const [respRate, setRespRate] = useState<number | "">(prefVitals?.respiratoryRate ?? "");
+  const [painVAS, setPainVAS] = useState<number | "">(visit?.vitals?.painVAS ?? "");
+  const [importedLabs, setImportedLabs] = useState<ImportedLabValue[]>(visit?.importedLabValues ?? []);
+  const [labImportOpen, setLabImportOpen] = useState(false);
+
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(visit?.prescriptions ?? []);
   const [investigations, setInvestigations] = useState<Investigation[]>(visit?.investigations ?? []);
@@ -153,14 +157,16 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         chiefComplaints: effectiveComplaints,
         chiefComplaint: effectiveComplaints.join(", "),
         soap: { historyOfPresentingIllness: hpi, currentVisit, examination, impression, plan },
-        vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined },
+        vitals: { bpSystolic: typeof bpS === "number" ? bpS : undefined, bpDiastolic: typeof bpD === "number" ? bpD : undefined, hr: typeof hr === "number" ? hr : undefined, respiratoryRate: typeof respRate === "number" ? respRate : undefined, weight: typeof weight === "number" ? weight : undefined, temperature: typeof temp === "number" ? temp : undefined, spo2: typeof spo2 === "number" ? spo2 : undefined, painVAS: typeof painVAS === "number" ? painVAS : undefined },
         prescriptions,
         investigations,
+        importedLabValues: importedLabs.length > 0 ? importedLabs : undefined,
         investigationNotes: investigationNotes || undefined,
         nextFollowUp: nextFollowUpIso,
         followUpNote: followUpNote || undefined,
         jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
         das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
+
       };
       await upsertVisit(next);
 
@@ -319,8 +325,50 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
                 <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
                 <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
+                <NumField label="Pain VAS (0–100)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(100, n)))} />
               </div>
             </Card>
+
+            <Card className="p-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="font-semibold">Lab Reports</h2>
+                <Button type="button" variant="outline" size="sm" onClick={() => setLabImportOpen(true)}>
+                  <FlaskConical className="h-3 w-3 mr-1" /> Import Lab Values
+                </Button>
+              </div>
+              <div className="mt-3">
+                {importedLabs.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">No lab values imported for this visit.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="text-left text-muted-foreground">
+                        <tr><th className="p-1">Date</th><th className="p-1">Test</th><th className="p-1">Value</th><th className="p-1">Unit</th><th className="p-1">Range</th><th className="p-1">Flag</th><th /></tr>
+                      </thead>
+                      <tbody>
+                        {importedLabs.map((l) => (
+                          <tr key={l.id} className="border-t">
+                            <td className="p-1 whitespace-nowrap">{l.date ? new Date(l.date).toLocaleDateString() : "—"}</td>
+                            <td className="p-1">{l.testName}</td>
+                            <td className="p-1 font-mono">{l.result ?? "—"}</td>
+                            <td className="p-1">{l.units ?? ""}</td>
+                            <td className="p-1">{l.referenceRange ?? ""}</td>
+                            <td className="p-1">{l.status ?? ""}</td>
+                            <td className="p-1">
+                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setImportedLabs(importedLabs.filter((x) => x.id !== l.id))}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+
 
             <Card className="p-5">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -488,7 +536,15 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <LabImportDialog
+        open={labImportOpen}
+        onOpenChange={setLabImportOpen}
+        patient={patient}
+        existing={importedLabs}
+        onImport={(rows) => setImportedLabs([...importedLabs, ...rows])}
+      />
     </>
+
 
   );
 }
@@ -580,3 +636,124 @@ export function PrescriptionNotesField({ value, onChange }: { value: string; onC
   );
 }
 
+
+function LabImportDialog({
+  open,
+  onOpenChange,
+  patient,
+  existing,
+  onImport,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  patient: Patient;
+  existing: ImportedLabValue[];
+  onImport: (rows: ImportedLabValue[]) => void;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!open) { setPicked({}); setExpanded(null); }
+  }, [open]);
+
+  const groups = useMemo(() => {
+    const map = new Map<string, Investigation[]>();
+    (patient.investigations ?? []).forEach((inv) => {
+      const key = (inv.date ?? "").slice(0, 10) || "undated";
+      const arr = map.get(key) ?? [];
+      arr.push(inv);
+      map.set(key, arr);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [patient.investigations]);
+
+  const alreadyIn = useMemo(
+    () => new Set(existing.map((e) => `${(e.date ?? "").slice(0, 10)}|${e.testName}`)),
+    [existing],
+  );
+
+  const importSelected = () => {
+    const rows: ImportedLabValue[] = [];
+    groups.forEach(([key, list]) => {
+      list.forEach((inv) => {
+        if (!picked[inv.id]) return;
+        rows.push({
+          id: uid("ilv"),
+          date: key === "undated" ? undefined : new Date(key).toISOString(),
+          testName: inv.testName,
+          result: inv.result,
+          units: inv.units,
+          referenceRange: inv.referenceRange,
+          status: inv.status,
+        });
+      });
+    });
+    if (rows.length === 0) { onOpenChange(false); return; }
+    onImport(rows);
+    toast.success(`Imported ${rows.length} lab value${rows.length === 1 ? "" : "s"}`);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Import lab values</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-auto space-y-2">
+          {groups.length === 0 && (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              No lab values recorded for this patient yet.
+            </div>
+          )}
+          {groups.map(([key, list]) => {
+            const isOpen = expanded === key;
+            return (
+              <div key={key} className="rounded-md border">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50"
+                  onClick={() => setExpanded(isOpen ? null : key)}
+                >
+                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  <span className="font-medium">
+                    {key === "undated" ? "Undated" : new Date(key).toLocaleDateString()}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-auto">{list.length} value{list.length === 1 ? "" : "s"}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t divide-y">
+                    {list.map((inv) => {
+                      const dup = alreadyIn.has(`${key === "undated" ? "" : key}|${inv.testName}`);
+                      return (
+                        <label key={inv.id} className="flex items-start gap-3 px-3 py-2 text-xs cursor-pointer hover:bg-muted/40">
+                          <Checkbox
+                            checked={!!picked[inv.id]}
+                            disabled={dup}
+                            onCheckedChange={(c) => setPicked((p) => ({ ...p, [inv.id]: !!c }))}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{inv.testName}{dup && <span className="ml-2 text-muted-foreground">(already imported)</span>}</div>
+                            <div className="text-muted-foreground">
+                              {[inv.result, inv.units, inv.referenceRange, inv.status].filter(Boolean).join(" · ") || "no value"}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="button" onClick={importSelected}>Import Selected</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

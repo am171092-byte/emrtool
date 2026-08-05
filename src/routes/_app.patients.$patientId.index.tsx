@@ -68,22 +68,23 @@ function PatientRecord() {
               <Button variant="ghost" size="icon" onClick={() => nav({ to: "/patients/$patientId/edit", params: { patientId } })} aria-label="Edit"><Pencil className="h-4 w-4" /></Button>
             </div>
             {p.primaryDiagnosis && <Badge className="mt-3" variant="secondary">{p.primaryDiagnosis}</Badge>}
-            {(p.tdiStartDate || p.tdi) && (
-              <div className="mt-2 rounded-md bg-primary/5 border border-primary/15 px-3 py-2">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total Duration of Illness</div>
-                {p.tdiStartDate ? (
-                  <div className="text-sm font-medium">
-                    {formatTdiDuration(p.tdiStartDate)}
-                    <span className="text-muted-foreground font-normal"> (since {formatTdiStartLabel(p.tdiStartDate)})</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-sm font-medium">{p.tdi}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">Update to auto-calculate</div>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="mt-2 rounded-md bg-primary/5 border border-primary/15 px-3 py-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total Duration of Illness</div>
+              {p.tdiStartDate ? (
+                <div className="text-sm font-medium">
+                  {formatTdiDuration(p.tdiStartDate)}
+                  <span className="text-muted-foreground font-normal"> (since {formatTdiStartLabel(p.tdiStartDate)})</span>
+                </div>
+              ) : p.tdi ? (
+                <>
+                  <div className="text-sm font-medium">{p.tdi}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Update to auto-calculate</div>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">Not recorded</div>
+              )}
+            </div>
+
           </Card>
 
           <NextVisitCard patient={p} />
@@ -186,7 +187,34 @@ function PatientRecord() {
                       <Section label="Examination">{v.soap.examination || v.soap.objective || "—"}</Section>
                       <Section label="Impression">{v.soap.impression || v.soap.assessment || "—"}</Section>
                       <Section label="Plan">{v.soap.plan || "—"}</Section>
+                      {v.vitals?.painVAS != null && (
+                        <Section label="Pain VAS">{v.vitals.painVAS} / 100</Section>
+                      )}
+                      {(v.importedLabValues?.length ?? 0) > 0 && (
+                        <Section label="Lab Reports">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead className="text-left text-muted-foreground">
+                                <tr><th className="p-1">Date</th><th className="p-1">Test</th><th className="p-1">Value</th><th className="p-1">Unit</th><th className="p-1">Range</th><th className="p-1">Flag</th></tr>
+                              </thead>
+                              <tbody>
+                                {v.importedLabValues!.map((l) => (
+                                  <tr key={l.id} className="border-t">
+                                    <td className="p-1 whitespace-nowrap">{l.date ? formatDate(l.date) : "—"}</td>
+                                    <td className="p-1">{l.testName}</td>
+                                    <td className="p-1 font-mono">{l.result ?? "—"}</td>
+                                    <td className="p-1">{l.units ?? ""}</td>
+                                    <td className="p-1">{l.referenceRange ?? ""}</td>
+                                    <td className="p-1">{l.status ?? ""}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </Section>
+                      )}
                       {v.prescriptions.length > 0 && (
+
                         <Section label="Prescriptions">
                           <ul className="list-disc pl-5 space-y-1">
                             {v.prescriptions.map((r) => (
@@ -270,14 +298,17 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
   const [height, setHeight] = useState<number | "">("");
   const [temp, setTemp] = useState<number | "">("");
   const [spo2, setSpo2] = useState<number | "">("");
+  const [painVAS, setPainVAS] = useState<number | "">("");
+
   const [respRate, setRespRate] = useState<number | "">("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [edit, setEdit] = useState<{ bpS: number | ""; bpD: number | ""; hr: number | ""; resp: number | ""; weight: number | ""; height: number | ""; temp: number | ""; spo2: number | "" }>({ bpS: "", bpD: "", hr: "", resp: "", weight: "", height: "", temp: "", spo2: "" });
+  const [edit, setEdit] = useState<{ bpS: number | ""; bpD: number | ""; hr: number | ""; resp: number | ""; weight: number | ""; height: number | ""; temp: number | ""; spo2: number | ""; painVAS: number | "" }>({ bpS: "", bpD: "", hr: "", resp: "", weight: "", height: "", temp: "", spo2: "", painVAS: "" });
 
   if (!patient) return null;
 
   const add = () => {
-    if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate) return;
+    if (!bpS && !bpD && !hr && !weight && !temp && !spo2 && !respRate && painVAS === "") return;
+
     upsertPatient({
       ...patient,
       vitals: [
@@ -290,11 +321,12 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
           height: typeof height === "number" ? height : patient.vitals?.[0]?.height,
           temperature: typeof temp === "number" ? temp : undefined,
           spo2: typeof spo2 === "number" ? spo2 : undefined,
+          painVAS: typeof painVAS === "number" ? painVAS : undefined,
         },
         ...v,
       ],
     });
-    setBpS(""); setBpD(""); setHr(""); setRespRate(""); setWeight(""); setHeight(""); setTemp(""); setSpo2("");
+    setBpS(""); setBpD(""); setHr(""); setRespRate(""); setWeight(""); setHeight(""); setTemp(""); setSpo2(""); setPainVAS("");
     toast.success("Vitals added");
   };
 
@@ -303,7 +335,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
     setEdit({
       bpS: row.bpSystolic ?? "", bpD: row.bpDiastolic ?? "", hr: row.hr ?? "",
       resp: row.respiratoryRate ?? "", weight: row.weight ?? "", height: row.height ?? "",
-      temp: row.temperature ?? "", spo2: row.spo2 ?? "",
+      temp: row.temperature ?? "", spo2: row.spo2 ?? "", painVAS: row.painVAS ?? "",
     });
   };
   const saveEdit = () => {
@@ -320,6 +352,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
         height: typeof edit.height === "number" ? edit.height : undefined,
         temperature: typeof edit.temp === "number" ? edit.temp : undefined,
         spo2: typeof edit.spo2 === "number" ? edit.spo2 : undefined,
+        painVAS: typeof edit.painVAS === "number" ? edit.painVAS : undefined,
       }),
     });
     setEditingId(null);
@@ -346,7 +379,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
       <Card className="p-3 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-muted-foreground">
-            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th><th className="p-2"></th></tr>
+            <tr><th className="p-2">Date</th><th className="p-2">BP (mmHg)</th><th className="p-2">HR (bpm)</th><th className="p-2">RR (/min)</th><th className="p-2">Wt (kg)</th><th className="p-2">Ht (cm)</th><th className="p-2">BMI</th><th className="p-2">Temp (°F)</th><th className="p-2">SpO₂ (%)</th><th className="p-2">Pain VAS</th><th className="p-2"></th></tr>
           </thead>
           <tbody>
             <tr className="border-t">
@@ -359,6 +392,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
               <td className="p-1 font-mono text-xs">—</td>
               <td className="p-1"><Input className="h-8 w-16 font-mono" type="number" value={temp} onChange={(e) => setTemp(e.target.value === "" ? "" : Number(e.target.value))} placeholder="98.6" /></td>
               <td className="p-1">{numCell(spo2, setSpo2, "w-14")}</td>
+              <td className="p-1">{numCell(painVAS, setPainVAS, "w-16")}</td>
               <td className="p-1"><Button size="sm" onClick={add}>Add</Button></td>
             </tr>
             {v.map((row) => editingId === row.id ? (
@@ -372,6 +406,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 font-mono text-xs">—</td>
                 <td className="p-1">{numCell(edit.temp, (n) => setEdit({ ...edit, temp: n }))}</td>
                 <td className="p-1">{numCell(edit.spo2, (n) => setEdit({ ...edit, spo2: n }), "w-14")}</td>
+                <td className="p-1">{numCell(edit.painVAS, (n) => setEdit({ ...edit, painVAS: n }), "w-16")}</td>
                 <td className="p-1"><div className="flex gap-1"><Button size="sm" onClick={saveEdit}>Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>×</Button></div></td>
               </tr>
             ) : (
@@ -385,6 +420,7 @@ function VitalsTab({ patient }: { patient: ReturnType<typeof usePatient> & {} })
                 <td className="p-2 font-mono">{row.weight && row.height ? (row.weight / ((row.height / 100) ** 2)).toFixed(1) : "—"}</td>
                 <td className="p-2 font-mono">{row.temperature ?? "—"}</td>
                 <td className="p-2 font-mono">{row.spo2 ?? "—"}</td>
+                <td className="p-2 font-mono">{row.painVAS ?? "—"}</td>
                 <td className="p-2"><div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(row)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeRow(row.id)}><Trash2 className="h-3 w-3" /></Button></div></td>
               </tr>
             ))}

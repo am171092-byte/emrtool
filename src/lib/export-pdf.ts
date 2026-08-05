@@ -124,7 +124,7 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
   // TDI line (if set)
   const tdiText = p.tdiStartDate
     ? `TDI: ${formatTdiDuration(p.tdiStartDate)} (since ${formatTdiStartLabel(p.tdiStartDate)})`
-    : (p.tdi ? `TDI: ${p.tdi}` : "");
+    : (p.tdi ? `TDI: ${p.tdi}` : "TDI: Not recorded");
   if (tdiText) {
     doc.setFont(FONT, "normal");
     doc.setFontSize(9);
@@ -155,6 +155,20 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
   sectionBody("Examination", v.soap?.examination || v.soap?.objective);
   sectionBody("Impression", v.soap?.impression || v.soap?.assessment);
   sectionBody("Plan", v.soap?.plan);
+
+  if (v.importedLabValues && v.importedLabValues.length > 0) {
+    sectionTitle("Lab Reports");
+    v.importedLabValues.forEach((l) => {
+      const bits = [
+        l.date ? new Date(l.date).toLocaleDateString() : null,
+        l.testName,
+        [l.result, l.units].filter(Boolean).join(" "),
+        l.referenceRange ? `(ref ${l.referenceRange})` : null,
+        l.status,
+      ].filter(Boolean).join("  ·  ");
+      writeText(`•  ${bits}`, { size: BODY_SIZE, indent: 2 });
+    });
+  }
 
   if (v.prescriptions && v.prescriptions.length > 0) {
     sectionTitle("Prescriptions");
@@ -194,6 +208,7 @@ function buildVisitPdf(p: Patient, v: Visit, doctor?: Doctor | null): jsPDF {
     if (vit.spo2 != null) parts.push(`SpO₂ ${vit.spo2} %`);
     if (vit.weight != null) parts.push(`Wt ${vit.weight} kg`);
     if (vit.height != null) parts.push(`Ht ${vit.height} cm`);
+    if (vit.painVAS != null) parts.push(`Pain VAS ${vit.painVAS}`);
     writeText(parts.join("  ·  "), { size: BODY_SIZE });
   }
 
