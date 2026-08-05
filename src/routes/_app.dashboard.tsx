@@ -77,7 +77,7 @@ function Dashboard() {
         <Stat label="Total patients" value={patients.length} />
         <Stat label="Visits today" value={visitsToday} />
         <Stat label="Visits this month" value={visitsThisMonth} />
-        <Stat label="Pending follow-ups" value={upcoming.length} />
+        <Stat label="Pending follow-ups" value={pendingFollowUps} />
       </div>
 
       <TodaysAppointments />
