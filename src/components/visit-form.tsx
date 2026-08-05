@@ -325,7 +325,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 <NumField label="Weight" suffix="kg" value={weight} onChange={setWeight} />
                 <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
                 <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
-                <NumField label="Pain VAS (0–100)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(100, n)))} />
+                <NumField label="Pain VAS (0–10)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(10, n)))} />
               </div>
             </Card>
 
