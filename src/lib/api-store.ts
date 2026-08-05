@@ -94,9 +94,10 @@ export function uid(prefix = "id"): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export async function loadFromBackend(): Promise<void> {
-  if (cache.loaded || cache.loading) return;
+export async function loadFromBackend(force = false): Promise<void> {
+  if ((cache.loaded && !force) || cache.loading) return;
   cache.loading = true;
+
   try {
     const patients = (await api<Patient[]>("/api/patients")).map(normalizePatient);
     cache.patients = patients;
