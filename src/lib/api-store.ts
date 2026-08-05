@@ -233,7 +233,10 @@ export async function upsertVisit(v: Visit): Promise<void> {
   cache.visits = all;
   notify();
   await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
+  // keep patient (nextFollowUp etc.) fresh after a visit write
+  await loadPatient(norm.patientId).catch(() => undefined);
 }
+
 
 export async function deleteVisit(id: string): Promise<void> {
   cache.visits = cache.visits.filter((v) => v.id !== id);
