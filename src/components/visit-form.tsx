@@ -173,6 +173,8 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         investigationNotes: investigationNotes || undefined,
         nextFollowUp: nextFollowUpIso,
         followUpNote: followUpNote || undefined,
+        feesPaid: typeof feesPaid === "number" ? feesPaid : undefined,
+        feesMode: feesMode || undefined,
         jointMap: Object.values(jointStates).some((j) => j.tender || j.swollen || j.note) ? { joints: Object.values(jointStates), tjc, sjc } : undefined,
         das28: enableDas28 && das28Snap ? (das28Snap as DAS28Data) : undefined,
 
@@ -345,6 +347,33 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
                 <NumField label="Temp" suffix="°F" value={temp} onChange={setTemp} />
                 <NumField label="SpO₂" suffix="%" value={spo2} onChange={setSpo2} />
                 <NumField label="Pain VAS (0–10)" value={painVAS} onChange={(n) => setPainVAS(n === "" ? "" : Math.max(0, Math.min(10, n)))} />
+              </div>
+            </Card>
+
+            <Card className="p-5 space-y-3">
+              <h2 className="font-semibold">Fees</h2>
+              <p className="text-xs text-muted-foreground">Internal record only — never shown on the printed prescription.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Fees Paid (₹)">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={feesPaid}
+                    onChange={(e) => setFeesPaid(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
+                    placeholder="0"
+                  />
+                </Field>
+                <Field label="Payment Mode">
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={feesMode}
+                    onChange={(e) => setFeesMode(e.target.value as "" | "UPI" | "Cash")}
+                  >
+                    <option value="">Select…</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Cash">Cash</option>
+                  </select>
+                </Field>
               </div>
             </Card>
 
