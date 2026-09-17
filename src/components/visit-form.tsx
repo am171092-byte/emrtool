@@ -128,7 +128,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
     setDirty(true);
-  }, [chiefComplaints, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap]);
+  }, [chiefComplaints, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap, feesPaid, feesMode]);
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };

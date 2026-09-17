@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { useAllPatients, useAllVisits, useRecentIds } from "@/lib/use-store";
 import { loadFromBackend, loadAllVisits } from "@/lib/api-store";
