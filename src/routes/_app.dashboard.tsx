@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { InitialsAvatar } from "@/components/initials-avatar";
 import { useAllPatients, useAllVisits, useRecentIds } from "@/lib/use-store";
 import { loadFromBackend, loadAllVisits } from "@/lib/api-store";
@@ -88,6 +90,8 @@ function Dashboard() {
         <Stat label="Pending follow-ups" value={pendingFollowUps} />
       </div>
 
+      <EarningsSummary />
+
       <TodaysAppointments />
 
       <div className="grid gap-4 md:grid-cols-5">
@@ -168,6 +172,100 @@ function Stat({ label, value }: { label: string; value: number }) {
     <Card className="p-4">
       <div className="font-mono text-3xl tabular-nums">{value}</div>
       <div className="text-xs text-muted-foreground mt-1">{label}</div>
+    </Card>
+  );
+}
+
+interface DashboardSummary {
+  patientsVisited?: number;
+  totalEarned?: number;
+  upiTotal?: number;
+  cashTotal?: number;
+  upi?: number;
+  cash?: number;
+  byMode?: { UPI?: number; Cash?: number };
+}
+
+function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function EarningsSummary() {
+  const now = new Date();
+  const [from, setFrom] = useState(toISODate(new Date(now.getFullYear(), now.getMonth(), 1)));
+  const [to, setTo] = useState(toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0)));
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token || !from || !to) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    fetch(`${API_BASE}/api/dashboard/summary?from=${from}&to=${to}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: DashboardSummary) => {
+        if (!cancelled) setSummary(data);
+      })
+      .catch(() => {
+        if (!cancelled) { setError(true); setSummary(null); }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [from, to]);
+
+  const upiTotal = summary?.upiTotal ?? summary?.upi ?? summary?.byMode?.UPI ?? 0;
+  const cashTotal = summary?.cashTotal ?? summary?.cash ?? summary?.byMode?.Cash ?? 0;
+  const totalEarned = summary?.totalEarned ?? (upiTotal + cashTotal);
+  const patientsVisited = summary?.patientsVisited ?? 0;
+
+  return (
+    <Card className="p-5">
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <h2 className="font-semibold mr-auto">Earnings</h2>
+        <div className="space-y-1">
+          <Label htmlFor="earn-from" className="text-xs">From</Label>
+          <Input id="earn-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="earn-to" className="text-xs">To</Label>
+          <Input id="earn-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+        </div>
+      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading summary…
+        </div>
+      ) : error ? (
+        <div className="text-sm text-muted-foreground py-4 text-center">Couldn't load earnings for this range.</div>
+      ) : (
+        <div className="flex flex-wrap gap-6">
+          <div>
+            <div className="font-mono text-2xl tabular-nums">{patientsVisited}</div>
+            <div className="text-xs text-muted-foreground">Patients visited</div>
+          </div>
+          <div>
+            <div className="font-mono text-2xl tabular-nums">₹{totalEarned.toLocaleString("en-IN")}</div>
+            <div className="text-xs text-muted-foreground">Total earned</div>
+          </div>
+          <div className="text-sm space-y-0.5">
+            <div className="text-muted-foreground">UPI: <span className="font-mono text-foreground">₹{upiTotal.toLocaleString("en-IN")}</span></div>
+            <div className="text-muted-foreground">Cash: <span className="font-mono text-foreground">₹{cashTotal.toLocaleString("en-IN")}</span></div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
