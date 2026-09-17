@@ -109,6 +109,10 @@ export interface Visit {
   vitals?: Vitals;
   prescriptions: Prescription[];
   investigations: Investigation[];
+  /** Consultation fee paid (₹). Internal only — never printed. */
+  feesPaid?: number;
+  /** Payment mode: exactly "UPI" or "Cash". Internal only — never printed. */
+  feesMode?: "UPI" | "Cash";
   nextFollowUp?: string;
   followUpNote?: string;
   jointMap?: JointMap;

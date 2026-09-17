@@ -107,6 +107,8 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [investigationNotes, setInvestigationNotes] = useState(visit?.investigationNotes ?? "");
   const [nextFollowUp, setNextFollowUp] = useState(visit?.nextFollowUp?.slice(0, 10) ?? "");
   const [followUpNote, setFollowUpNote] = useState(visit?.followUpNote ?? "");
+  const [feesPaid, setFeesPaid] = useState<number | "">(visit?.feesPaid ?? "");
+  const [feesMode, setFeesMode] = useState<"" | "UPI" | "Cash">(visit?.feesMode ?? "");
 
   const [enableDas28, setEnableDas28] = useState(!!visit?.das28);
   const [jointStates, setJointStates] = useState<Record<string, JointState>>(() => {
