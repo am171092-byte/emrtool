@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { DRAFT_PREFIX, subscribeSession, isSessionExpired, isSessionExpiredError } from "@/lib/session";
 import type { Patient, Visit, Prescription, Investigation, JointState, DAS28Data, ImportedLabValue } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -120,6 +121,7 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const [das28Snap, setDas28Snap] = useState<DAS28Snapshot | null>(visit?.das28 ?? null);
   const [aiOpen, setAiOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const stableNewId = useRef(uid("vis"));
 
   const tjc = Object.values(jointStates).filter((j) => j.tender).length;
   const sjc = Object.values(jointStates).filter((j) => j.swollen).length;
@@ -388,6 +390,20 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   return (
     <>
       <form onSubmit={save} className="space-y-4 pb-32">
+        {restoredDraft && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+            <span>Restored unsaved draft</span>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={discardDraft}>Discard</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setRestoredDraft(false)}>Dismiss</Button>
+            </div>
+          </div>
+        )}
+        {awaitingReauth && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            Not saved yet — sign in again and this visit will save automatically.
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">{visit ? "Edit visit" : "New visit"}</h1>
           <Button type="button" variant="outline" size="sm" onClick={() => setAiOpen(true)}>
