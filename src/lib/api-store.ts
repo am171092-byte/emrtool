@@ -217,14 +217,14 @@ export async function upsertPatient(p: Patient): Promise<void> {
   else all.unshift(norm);
   cache.patients = all;
   notify();
-  await api(`/api/patients/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
+  await api(`/api/patients/${norm.id}`, { method: "PUT", body: JSON.stringify(norm), queueOnAuthFail: true });
 }
 
 export async function deletePatient(id: string): Promise<void> {
   cache.patients = cache.patients.filter((p) => p.id !== id);
   cache.visits = cache.visits.filter((v) => v.patientId !== id);
   notify();
-  await api(`/api/patients/${id}`, { method: "DELETE" });
+  await api(`/api/patients/${id}`, { method: "DELETE", queueOnAuthFail: true });
 }
 
 export function touchRecent(id: string) {
@@ -287,7 +287,7 @@ export async function upsertVisit(v: Visit): Promise<void> {
   else all.unshift(norm);
   cache.visits = all;
   notify();
-  await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
+  await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm), queueOnAuthFail: true });
   // keep patient (nextFollowUp etc.) fresh after a visit write
   await loadPatient(norm.patientId).catch(() => undefined);
 }
@@ -296,7 +296,7 @@ export async function upsertVisit(v: Visit): Promise<void> {
 export async function deleteVisit(id: string): Promise<void> {
   cache.visits = cache.visits.filter((v) => v.id !== id);
   notify();
-  await api(`/api/visits/${id}`, { method: "DELETE" });
+  await api(`/api/visits/${id}`, { method: "DELETE", queueOnAuthFail: true });
 }
 
 export async function addAttachment(
@@ -327,7 +327,7 @@ export async function deleteAttachment(patientId: string, attachmentId: string):
     };
     notify();
   }
-  await api(`/api/attachments/${attachmentId}`, { method: "DELETE" });
+  await api(`/api/attachments/${attachmentId}`, { method: "DELETE", queueOnAuthFail: true });
 }
 
 export function getAttachmentUrl(fileId: string): string {
