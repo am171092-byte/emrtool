@@ -13,6 +13,12 @@ function AuthSuccess() {
 
   useEffect(() => {
     if (loading) return;
+    // Re-sign-in tab opened from the "signed out" banner: the original tab picks up
+    // the new token via the storage event, so just close this one.
+    if (doctor && window.opener && !window.opener.closed) {
+      try { window.opener.focus(); } catch { /* ignore */ }
+      window.close();
+    }
     if (doctor) {
       navigate({ to: doctor.profileComplete ? "/dashboard" : "/profile-setup" });
     } else {

@@ -3,12 +3,27 @@
  */
 import type { Patient, Visit, Attachment } from "./types";
 import { getAuthToken } from "./auth-context";
+import {
+  SessionExpiredError,
+  isReauthResponse,
+  markSessionExpired,
+  markSessionRestored,
+  enqueueWrite,
+  getPendingWrites,
+  removePendingWrite,
+  isSessionExpiredError,
+} from "./session";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-async function api<T>(path: string, options?: RequestInit): Promise<T> {
+interface ApiOptions extends RequestInit {
+  /** Queue this write for retry if the session has ended. */
+  queueOnAuthFail?: boolean;
+}
+
+async function rawFetch(path: string, options?: RequestInit) {
   const token = getAuthToken();
-  const res = await fetch(`${API_BASE}${path}`, {
+  return fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -16,12 +31,52 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   });
+}
+
+/** Central API wrapper: detects session-ended 401s, never navigates or clears data. */
+async function api<T>(path: string, options?: ApiOptions): Promise<T> {
+  const { queueOnAuthFail, ...init } = options ?? {};
+  const res = await rawFetch(path, init);
+  if (await isReauthResponse(res)) {
+    if (queueOnAuthFail) {
+      enqueueWrite({ method: init.method ?? "GET", path, body: typeof init.body === "string" ? init.body : undefined });
+    }
+    markSessionExpired();
+    throw new SessionExpiredError();
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || `API ${res.status}`);
   }
-  return res.json();
+  return res.json().catch(() => ({}) as T);
 }
+
+let flushing = false;
+/** Replays queued writes after sign-in. Returns number saved. */
+export async function flushPendingWrites(): Promise<number> {
+  if (flushing) return 0;
+  flushing = true;
+  let saved = 0;
+  try {
+    for (const w of [...getPendingWrites()]) {
+      try {
+        const res = await rawFetch(w.path, { method: w.method, body: w.body });
+        if (await isReauthResponse(res)) { markSessionExpired(); break; }
+        if (res.ok) { removePendingWrite(w.key); saved++; }
+      } catch {
+        break; // network issue — keep the rest queued
+      }
+    }
+  } finally {
+    flushing = false;
+  }
+  if (saved > 0) {
+    await loadFromBackend(true);
+  }
+  return saved;
+}
+
+export { isSessionExpiredError, markSessionRestored };
 
 function ensureArray<T = unknown>(val: unknown): T[] {
   if (Array.isArray(val)) return val as T[];
@@ -162,14 +217,14 @@ export async function upsertPatient(p: Patient): Promise<void> {
   else all.unshift(norm);
   cache.patients = all;
   notify();
-  await api(`/api/patients/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
+  await api(`/api/patients/${norm.id}`, { method: "PUT", body: JSON.stringify(norm), queueOnAuthFail: true });
 }
 
 export async function deletePatient(id: string): Promise<void> {
   cache.patients = cache.patients.filter((p) => p.id !== id);
   cache.visits = cache.visits.filter((v) => v.patientId !== id);
   notify();
-  await api(`/api/patients/${id}`, { method: "DELETE" });
+  await api(`/api/patients/${id}`, { method: "DELETE", queueOnAuthFail: true });
 }
 
 export function touchRecent(id: string) {
@@ -232,7 +287,7 @@ export async function upsertVisit(v: Visit): Promise<void> {
   else all.unshift(norm);
   cache.visits = all;
   notify();
-  await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm) });
+  await api(`/api/visits/${norm.id}`, { method: "PUT", body: JSON.stringify(norm), queueOnAuthFail: true });
   // keep patient (nextFollowUp etc.) fresh after a visit write
   await loadPatient(norm.patientId).catch(() => undefined);
 }
@@ -241,7 +296,7 @@ export async function upsertVisit(v: Visit): Promise<void> {
 export async function deleteVisit(id: string): Promise<void> {
   cache.visits = cache.visits.filter((v) => v.id !== id);
   notify();
-  await api(`/api/visits/${id}`, { method: "DELETE" });
+  await api(`/api/visits/${id}`, { method: "DELETE", queueOnAuthFail: true });
 }
 
 export async function addAttachment(
@@ -272,7 +327,7 @@ export async function deleteAttachment(patientId: string, attachmentId: string):
     };
     notify();
   }
-  await api(`/api/attachments/${attachmentId}`, { method: "DELETE" });
+  await api(`/api/attachments/${attachmentId}`, { method: "DELETE", queueOnAuthFail: true });
 }
 
 export function getAttachmentUrl(fileId: string): string {
