@@ -32,7 +32,7 @@ export function AppShell() {
   const signOutCtl = useSignOut();
   const patients = useAllPatients();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const isNavigating = useRouterState({ select: (s) => s.isLoading || s.isTransitioning });
+  const isNavigating = useRouterState({ select: (s) => s.isLoading });
   const [cmdOpen, setCmdOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
 
