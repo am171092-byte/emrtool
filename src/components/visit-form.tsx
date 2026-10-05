@@ -124,11 +124,69 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
   const tjc = Object.values(jointStates).filter((j) => j.tender).length;
   const sjc = Object.values(jointStates).filter((j) => j.swollen).length;
 
-  // warn on unload
-  const [dirty, setDirty] = useState(false);
+  // ---------- local draft protection (browser-only, never calls the API, excludes DAS28/joints) ----------
+  const draftKey = `${DRAFT_PREFIX}visit_${visit?.id ?? `${patient.id}-new`}`;
+  const [draftReady, setDraftReady] = useState(false);
+  const [restoredDraft, setRestoredDraft] = useState(false);
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.date !== undefined) setDate(d.date);
+        if (d.time !== undefined) setTime(d.time);
+        if (Array.isArray(d.chiefComplaints)) setChiefComplaints(d.chiefComplaints);
+        if (d.hpi !== undefined) setHpi(d.hpi);
+        if (d.currentVisit !== undefined) setCurrentVisit(d.currentVisit);
+        if (d.examination !== undefined) setExamination(d.examination);
+        if (d.impression !== undefined) setImpression(d.impression);
+        if (d.plan !== undefined) setPlan(d.plan);
+        if (d.vitals) {
+          setBpS(d.vitals.bpS ?? ""); setBpD(d.vitals.bpD ?? ""); setHr(d.vitals.hr ?? "");
+          setWeight(d.vitals.weight ?? ""); setTemp(d.vitals.temp ?? ""); setSpo2(d.vitals.spo2 ?? "");
+          setRespRate(d.vitals.respRate ?? ""); setPainVAS(d.vitals.painVAS ?? "");
+        }
+        if (Array.isArray(d.importedLabs)) setImportedLabs(d.importedLabs);
+        if (Array.isArray(d.prescriptions)) setPrescriptions(d.prescriptions);
+        if (Array.isArray(d.investigations)) setInvestigations(d.investigations);
+        if (d.investigationNotes !== undefined) setInvestigationNotes(d.investigationNotes);
+        if (d.nextFollowUp !== undefined) setNextFollowUp(d.nextFollowUp);
+        if (d.followUpNote !== undefined) setFollowUpNote(d.followUpNote);
+        if (d.feesPaid !== undefined) setFeesPaid(d.feesPaid);
+        if (d.feesMode !== undefined) setFeesMode(d.feesMode);
+        setPrefilled(true);
+        setRestoredDraft(true);
+      }
+    } catch { /* ignore corrupt draft */ }
+    setDraftReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  // dirty tracking: skip the initial mount/restore pass
+  const [dirty, setDirty] = useState(false);
+  const firstPass = useRef(true);
+  const formSnapshot = {
+    date, time, chiefComplaints, hpi, currentVisit, examination, impression, plan,
+    vitals: { bpS, bpD, hr, weight, temp, spo2, respRate, painVAS },
+    importedLabs, prescriptions, investigations, investigationNotes, nextFollowUp, followUpNote, feesPaid, feesMode,
+  };
+  const snapshotJson = JSON.stringify(formSnapshot);
+  useEffect(() => {
+    if (!draftReady) return;
+    if (firstPass.current) { firstPass.current = false; if (!restoredDraft) return; }
     setDirty(true);
-  }, [chiefComplaints, hpi, currentVisit, examination, impression, plan, prescriptions, investigations, investigationNotes, jointStates, das28Snap, feesPaid, feesMode]);
+    const t = setTimeout(() => {
+      try { localStorage.setItem(draftKey, snapshotJson); } catch { /* quota */ }
+    }, 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotJson, draftReady]);
+  useEffect(() => {
+    if (!draftReady) return;
+    setDirty(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jointStates, das28Snap]);
+
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -136,8 +194,24 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const discardDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+    window.location.reload();
+  };
+
+  // ---------- auto-retry save after the user signs in again ----------
+  const [awaitingReauth, setAwaitingReauth] = useState(false);
+  const sessionExpired = useSyncExternalStore(subscribeSession, isSessionExpired, () => false);
+  const saveRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (awaitingReauth && !sessionExpired) {
+      setAwaitingReauth(false);
+      saveRef.current();
+    }
+  }, [awaitingReauth, sessionExpired]);
+
+  const save = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (saving) return;
     let effectiveComplaints = chiefComplaints;
     if (effectiveComplaints.length === 0) {
@@ -154,10 +228,12 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
       }
       effectiveComplaints = firstCc;
     }
+    // make sure the latest state is on disk before any network call
+    try { localStorage.setItem(draftKey, snapshotJson); } catch { /* quota */ }
     setSaving(true);
     const toastId = toast.loading("Saving visit…");
     try {
-      const id = visit?.id ?? uid("vis");
+      const id = visit?.id ?? stableNewId.current;
       const nextFollowUpIso = nextFollowUp ? new Date(nextFollowUp).toISOString() : undefined;
       const next: Visit = {
         id, patientId: patient.id,
@@ -189,8 +265,6 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         }
       }
 
-
-
       toast.loading("Updating patient record…", { id: toastId });
       const newMeds = prescriptions
         .filter((p) => p.drug && p.drug.trim())
@@ -207,7 +281,6 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
         ...(nextFollowUpIso ? { nextFollowUp: nextFollowUpIso, nextVisitReason: followUpNote || undefined } : {}),
       };
       await upsertPatient(patientPatch);
-      setDirty(false);
 
       const priorFollowUp = visit?.nextFollowUp?.slice(0, 10) ?? "";
       if (nextFollowUpIso && nextFollowUp !== priorFollowUp) {
@@ -221,13 +294,22 @@ export function VisitForm({ patient, visit, onSaved, onCancel }: Props) {
           notes: followUpNote,
         });
       }
+      // success — only now clear the draft and leave the form
+      try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+      setDirty(false);
       toast.success("Visit saved successfully", { id: toastId });
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save visit", { id: toastId });
+      if (isSessionExpiredError(err)) {
+        setAwaitingReauth(true);
+        toast.error("Signed out — your visit is kept on this device and will save after you sign in again.", { id: toastId, duration: 8000 });
+      } else {
+        toast.error(err instanceof Error ? `${err.message} — your visit is still here, try again.` : "Failed to save visit — your visit is still here, try again.", { id: toastId });
+      }
       setSaving(false);
     }
   };
+  saveRef.current = () => { void save(); };
 
   const addPx = () => setPrescriptions([...prescriptions, { id: uid("rx"), drug: "", dose: "", frequency: "", duration: "", notes: "" }]);
   const addInv = () => setInvestigations([...investigations, { id: uid("inv"), testName: "", urgency: "Routine" }]);
