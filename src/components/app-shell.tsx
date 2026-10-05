@@ -16,6 +16,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { useSignOut } from "@/components/sign-out-controls";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: Home, mobile: true, mobileLabel: "Home" },
@@ -27,7 +28,8 @@ const NAV = [
 
 export function AppShell() {
   const navigate = useNavigate();
-  const { doctor, loading, signOut } = useAuth();
+  const { doctor, loading } = useAuth();
+  const signOutCtl = useSignOut();
   const patients = useAllPatients();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isNavigating = useRouterState({ select: (s) => s.isLoading || s.isTransitioning });
@@ -110,13 +112,16 @@ export function AppShell() {
           <Link to="/settings" className="flex items-center gap-2 text-xs text-sidebar-foreground/80 hover:text-sidebar-foreground">
             <Settings className="h-3.5 w-3.5" /> Settings
           </Link>
+          <button onClick={() => signOutCtl.request("all")} className="flex items-center gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground">
+            <LogOut className="h-3.5 w-3.5" /> Sign out of all devices
+          </button>
           <div className="flex items-center gap-2">
             <InitialsAvatar name={doctor.name} size={32} />
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium truncate">{doctor.name}</div>
               <div className="text-[10px] opacity-70 truncate">{doctor.email}</div>
             </div>
-            <button onClick={() => { signOut(); navigate({ to: "/login" }); }} className="opacity-70 hover:opacity-100" aria-label="Sign out">
+            <button onClick={() => signOutCtl.request("device")} className="opacity-70 hover:opacity-100" aria-label="Sign out" title="Sign out">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
@@ -155,6 +160,7 @@ export function AppShell() {
         })}
       </nav>
 
+      {signOutCtl.dialog}
       <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
         <CommandInput placeholder="Search by name, phone, diagnosis…" />
         <CommandList>

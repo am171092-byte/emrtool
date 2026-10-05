@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { InitialsAvatar } from "@/components/initials-avatar";
 import { LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { TemplatesCard } from "@/components/templates-card";
+import { useSignOut } from "@/components/sign-out-controls";
 
 export const Route = createFileRoute("/_app/settings")({
   head: () => ({ meta: [{ title: "Settings — RheumCare" }] }),
@@ -23,8 +24,8 @@ const THEME_KEY = "rheumcare_theme";
 interface Prefs { defaultMarker: "ESR" | "CRP"; reminderDays: number }
 
 function SettingsPage() {
-  const { doctor, signOut, updateProfile } = useAuth();
-  const nav = useNavigate();
+  const { doctor, updateProfile } = useAuth();
+  const signOutCtl = useSignOut();
   const [prefs, setPrefs] = useState<Prefs>({ defaultMarker: "ESR", reminderDays: 30 });
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   const [editing, setEditing] = useState(false);
@@ -184,11 +185,15 @@ function SettingsPage() {
         <p className="text-xs text-muted-foreground">RheumCare EMR v1.0 — Your data is stored securely in your Google Drive.</p>
       </Card>
 
-      <Card className="p-5 border-destructive/40">
-        <Button variant="destructive" onClick={() => { signOut(); nav({ to: "/login" }); }}>
+      <Card className="p-5 border-destructive/40 flex flex-wrap gap-2">
+        <Button variant="destructive" onClick={() => signOutCtl.request("device")}>
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
+        <Button variant="outline" className="text-destructive" onClick={() => signOutCtl.request("all")}>
+          Sign out of all devices
+        </Button>
       </Card>
+      {signOutCtl.dialog}
     </div>
   );
 }
