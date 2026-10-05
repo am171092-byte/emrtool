@@ -9,32 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileSetupRouteImport } from './routes/profile-setup'
-import { Route as AppAiAssistantRouteImport } from './routes/_app.ai-assistant'
-import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
-import { Route as AppDas28RouteImport } from './routes/_app.das28'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSuccessRouteImport } from './routes/auth.success'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppDas28RouteImport } from './routes/_app.das28'
+import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
+import { Route as AppAiAssistantRouteImport } from './routes/_app.ai-assistant'
 import { Route as AppPatientsIndexRouteImport } from './routes/_app.patients.index'
 import { Route as AppPatientsNewRouteImport } from './routes/_app.patients.new'
 import { Route as AppPatientsPatientIdIndexRouteImport } from './routes/_app.patients.$patientId.index'
-import { Route as AppPatientsPatientIdDas28RouteImport } from './routes/_app.patients.$patientId.das28'
-import { Route as AppPatientsPatientIdEditRouteImport } from './routes/_app.patients.$patientId.edit'
 import { Route as AppPatientsPatientIdJointMapRouteImport } from './routes/_app.patients.$patientId.joint-map'
+import { Route as AppPatientsPatientIdEditRouteImport } from './routes/_app.patients.$patientId.edit'
+import { Route as AppPatientsPatientIdDas28RouteImport } from './routes/_app.patients.$patientId.das28'
 import { Route as AppPatientsPatientIdVisitsNewRouteImport } from './routes/_app.patients.$patientId.visits.new'
 import { Route as AppPatientsPatientIdVisitsVisitIdEditRouteImport } from './routes/_app.patients.$patientId.visits.$visitId.edit'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const ProfileSetupRoute = ProfileSetupRouteImport.update({
+  id: '/profile-setup',
+  path: '/profile-setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -42,24 +38,23 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileSetupRoute = ProfileSetupRouteImport.update({
-  id: '/profile-setup',
-  path: '/profile-setup',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppAiAssistantRoute = AppAiAssistantRouteImport.update({
-  id: '/ai-assistant',
-  path: '/ai-assistant',
-  getParentRoute: () => AppRoute,
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AppCalendarRoute = AppCalendarRouteImport.update({
-  id: '/calendar',
-  path: '/calendar',
-  getParentRoute: () => AppRoute,
+const AuthSuccessRoute = AuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AppDas28Route = AppDas28RouteImport.update({
-  id: '/das28',
-  path: '/das28',
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -67,15 +62,20 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const AppDas28Route = AppDas28RouteImport.update({
+  id: '/das28',
+  path: '/das28',
   getParentRoute: () => AppRoute,
 } as any)
-const AuthSuccessRoute = AuthSuccessRouteImport.update({
-  id: '/auth/success',
-  path: '/auth/success',
-  getParentRoute: () => rootRouteImport,
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiAssistantRoute = AppAiAssistantRouteImport.update({
+  id: '/ai-assistant',
+  path: '/ai-assistant',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPatientsIndexRoute = AppPatientsIndexRouteImport.update({
   id: '/patients/',
@@ -93,10 +93,10 @@ const AppPatientsPatientIdIndexRoute =
     path: '/patients/$patientId/',
     getParentRoute: () => AppRoute,
   } as any)
-const AppPatientsPatientIdDas28Route =
-  AppPatientsPatientIdDas28RouteImport.update({
-    id: '/patients/$patientId/das28',
-    path: '/patients/$patientId/das28',
+const AppPatientsPatientIdJointMapRoute =
+  AppPatientsPatientIdJointMapRouteImport.update({
+    id: '/patients/$patientId/joint-map',
+    path: '/patients/$patientId/joint-map',
     getParentRoute: () => AppRoute,
   } as any)
 const AppPatientsPatientIdEditRoute =
@@ -105,10 +105,10 @@ const AppPatientsPatientIdEditRoute =
     path: '/patients/$patientId/edit',
     getParentRoute: () => AppRoute,
   } as any)
-const AppPatientsPatientIdJointMapRoute =
-  AppPatientsPatientIdJointMapRouteImport.update({
-    id: '/patients/$patientId/joint-map',
-    path: '/patients/$patientId/joint-map',
+const AppPatientsPatientIdDas28Route =
+  AppPatientsPatientIdDas28RouteImport.update({
+    id: '/patients/$patientId/das28',
+    path: '/patients/$patientId/das28',
     getParentRoute: () => AppRoute,
   } as any)
 const AppPatientsPatientIdVisitsNewRoute =
@@ -254,18 +254,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
+    '/profile-setup': {
+      id: '/profile-setup'
+      path: '/profile-setup'
+      fullPath: '/profile-setup'
+      preLoaderRoute: typeof ProfileSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -275,32 +268,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile-setup': {
-      id: '/profile-setup'
-      path: '/profile-setup'
-      fullPath: '/profile-setup'
-      preLoaderRoute: typeof ProfileSetupRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/ai-assistant': {
-      id: '/_app/ai-assistant'
-      path: '/ai-assistant'
-      fullPath: '/ai-assistant'
-      preLoaderRoute: typeof AppAiAssistantRouteImport
-      parentRoute: typeof AppRoute
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_app/calendar': {
-      id: '/_app/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof AppCalendarRouteImport
-      parentRoute: typeof AppRoute
+    '/auth/success': {
+      id: '/auth/success'
+      path: '/auth/success'
+      fullPath: '/auth/success'
+      preLoaderRoute: typeof AuthSuccessRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_app/das28': {
-      id: '/_app/das28'
-      path: '/das28'
-      fullPath: '/das28'
-      preLoaderRoute: typeof AppDas28RouteImport
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -310,19 +303,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
+    '/_app/das28': {
+      id: '/_app/das28'
+      path: '/das28'
+      fullPath: '/das28'
+      preLoaderRoute: typeof AppDas28RouteImport
       parentRoute: typeof AppRoute
     }
-    '/auth/success': {
-      id: '/auth/success'
-      path: '/auth/success'
-      fullPath: '/auth/success'
-      preLoaderRoute: typeof AuthSuccessRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/calendar': {
+      id: '/_app/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai-assistant': {
+      id: '/_app/ai-assistant'
+      path: '/ai-assistant'
+      fullPath: '/ai-assistant'
+      preLoaderRoute: typeof AppAiAssistantRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/patients/': {
       id: '/_app/patients/'
@@ -345,11 +345,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPatientsPatientIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/patients/$patientId/das28': {
-      id: '/_app/patients/$patientId/das28'
-      path: '/patients/$patientId/das28'
-      fullPath: '/patients/$patientId/das28'
-      preLoaderRoute: typeof AppPatientsPatientIdDas28RouteImport
+    '/_app/patients/$patientId/joint-map': {
+      id: '/_app/patients/$patientId/joint-map'
+      path: '/patients/$patientId/joint-map'
+      fullPath: '/patients/$patientId/joint-map'
+      preLoaderRoute: typeof AppPatientsPatientIdJointMapRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/patients/$patientId/edit': {
@@ -359,11 +359,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPatientsPatientIdEditRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/patients/$patientId/joint-map': {
-      id: '/_app/patients/$patientId/joint-map'
-      path: '/patients/$patientId/joint-map'
-      fullPath: '/patients/$patientId/joint-map'
-      preLoaderRoute: typeof AppPatientsPatientIdJointMapRouteImport
+    '/_app/patients/$patientId/das28': {
+      id: '/_app/patients/$patientId/das28'
+      path: '/patients/$patientId/das28'
+      fullPath: '/patients/$patientId/das28'
+      preLoaderRoute: typeof AppPatientsPatientIdDas28RouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/patients/$patientId/visits/new': {
